@@ -4,6 +4,10 @@ Open source bulk file download for Salesforce. Select records, click once, and g
 
 MIT licensed. Runs entirely inside your Salesforce org and your browser. No external servers.
 
+![FileCrate walkthrough: pick a list view, preview the files, filter, download a zip, and the other ways to choose records](docs/images/filecrate-demo.gif)
+
+The same walkthrough is available as a video: [filecrate-demo.mp4](docs/images/filecrate-demo.mp4).
+
 ## What it does
 
 - Downloads **Files, classic Attachments, classic Notes and Enhanced Notes** from the records you pick.
@@ -22,6 +26,16 @@ MIT licensed. Runs entirely inside your Salesforce org and your browser. No exte
 - Keeps a **history** of runs, each with a "Run again" action.
 
 Users only ever get files they can already open in Salesforce. All Apex runs `with sharing` and in user mode.
+
+## Screenshots
+
+Taken in a Developer Edition org with sample records.
+
+| | |
+|---|---|
+| **Preview before you download**<br>![Preview of 21 files across 3 records with options for file types, dates, folder layout and name pattern](docs/images/list-view-preview.png) | **Done**<br>![Done screen listing the saved zip](docs/images/download-done.png) |
+| **Search by name**<br>![Search mode with one record ticked and its 7 files previewed](docs/images/search-mode.png) | **SOQL mode**<br>![SOQL mode with a SELECT Id query and the resulting preview](docs/images/soql-mode.png) |
+| **Org files**<br>![Org files mode loading static resources](docs/images/org-files.png) | **Setup page**<br>![Setup page with settings, storage use and an API access check](docs/images/setup-page.png) |
 
 ## How it works
 

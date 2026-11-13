@@ -6,7 +6,7 @@
         <p data-id="empty">{labels.History_Empty}</p>
     </template>
     <template lwc:elseif={hasJobs}>
-        <lightning-datatable key-field="id" data={rows} columns={columns} hide-checkbox-column
+        <lightning-datatable key-field="id" data={rows} columns={columns} hide-checkbox-column column-widths-mode="auto"
             onrowaction={handleRowAction}></lightning-datatable>
     </template>
 </template>

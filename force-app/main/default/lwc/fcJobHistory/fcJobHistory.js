@@ -14,14 +14,14 @@ export default class FcJobHistory extends LightningElement {
     errorMessage = null;
 
     columns = [
-        { label: LABELS.Col_Job, fieldName: 'name', initialWidth: 110 },
+        { label: LABELS.Col_Job, fieldName: 'name' },
         { label: LABELS.Col_When, fieldName: 'createdDate', type: 'date', typeAttributes: { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' } },
         { label: LABELS.Col_Source, fieldName: 'sourceLabel' },
         { label: LABELS.Object, fieldName: 'objectApiName' },
-        { label: LABELS.Col_Files, fieldName: 'fileCount', type: 'number', initialWidth: 90 },
-        { label: LABELS.Col_Size, fieldName: 'sizeText', initialWidth: 100 },
-        { label: LABELS.Col_Destination, fieldName: 'destinationLabel', initialWidth: 130 },
-        { label: LABELS.Col_Status, fieldName: 'statusLabel', initialWidth: 110 },
+        { label: LABELS.Col_Files, fieldName: 'fileCount', type: 'number' },
+        { label: LABELS.Col_Size, fieldName: 'sizeText' },
+        { label: LABELS.Col_Destination, fieldName: 'destinationLabel' },
+        { label: LABELS.Col_Status, fieldName: 'statusLabel' },
         { label: LABELS.Col_By, fieldName: 'createdByName' },
         { type: 'action', typeAttributes: { rowActions: [{ label: LABELS.Rerun, name: 'rerun' }] } }
     ];
