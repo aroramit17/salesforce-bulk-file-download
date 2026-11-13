@@ -440,4 +440,28 @@
         <shortDescription>Fc Engine Error</shortDescription>
         <value>The download engine did not start. Refresh the page. If it keeps happening, ask your admin to check that you have a FileCrate permission set.</value>
     </labels>
+    <labels>
+        <fullName>Fc_Personal_Documents</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Personal Documents</shortDescription>
+        <value>My Personal Documents</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Static_Resources</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Static Resources</shortDescription>
+        <value>Static Resources</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Event_Log_Permission</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Event Log Permission</shortDescription>
+        <value>You need the View Event Log Files permission to download event logs.</value>
+    </labels>
 </CustomLabels>
