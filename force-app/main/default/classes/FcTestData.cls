@@ -62,6 +62,25 @@ public class FcTestData {
         return u;
     }
 
+    public static User standardUser() {
+        Profile p = [SELECT Id FROM Profile WHERE Name = 'Standard User' LIMIT 1];
+        String unique = 'fcstd' + Crypto.getRandomInteger() + '@filecrate.test';
+        User u = new User(
+            ProfileId = p.Id, LastName = 'Standard', Alias = 'fcstd', Email = unique, Username = unique,
+            TimeZoneSidKey = 'America/Chicago', LocaleSidKey = 'en_US', EmailEncodingKey = 'UTF-8', LanguageLocaleKey = 'en_US'
+        );
+        insert u;
+        return u;
+    }
+
+    /** A standard user who also holds the named FileCrate permission set. */
+    public static User userWithPermissionSet(String permissionSetName) {
+        User u = standardUser();
+        PermissionSet ps = [SELECT Id FROM PermissionSet WHERE Name = :permissionSetName LIMIT 1];
+        insert new PermissionSetAssignment(AssigneeId = u.Id, PermissionSetId = ps.Id);
+        return u;
+    }
+
     public static FcFileRow only(List<FcFileRow> rows, String kind) {
         FcFileRow found;
         for (FcFileRow r : rows) {
