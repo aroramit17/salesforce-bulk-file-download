@@ -45,7 +45,8 @@ Apex only returns file metadata, never file bytes, so Apex heap limits never cap
 You need the [Salesforce CLI](https://developer.salesforce.com/tools/salesforcecli) and an org you are logged in to.
 
 ```bash
-git clone <this repo> && cd filecrate
+git clone https://github.com/aroramit17/salesforce-bulk-file-download.git
+cd salesforce-bulk-file-download
 sf project deploy start --target-org <your-org-alias>
 sf org assign permset --name FileCrate_User --target-org <your-org-alias>
 ```
