@@ -467,6 +467,20 @@ describe('folder sink', () => {
     });
 });
 
+describe('api check', () => {
+    it('answers a ping with the result of a small API call', async () => {
+        const t = setup({ [API + 'limits']: { DailyApiRequests: { Max: 15000, Remaining: 14000 } } });
+        await t.engine.handle({ fc: 1, type: 'ping', requestId: 'p1' });
+        expect(t.last('pong')).toMatchObject({ requestId: 'p1', ok: true, apiRemaining: 14000, apiMax: 15000 });
+    });
+
+    it('reports a failed ping', async () => {
+        const t = setup({ [API + 'limits']: 403 });
+        await t.engine.handle({ fc: 1, type: 'ping', requestId: 'p1' });
+        expect(t.last('pong')).toMatchObject({ requestId: 'p1', ok: false, error: 'HTTP 403' });
+    });
+});
+
 describe('parent link', () => {
     const LIGHTNING = 'https://acme.lightning.force.com';
     const VF = 'https://acme--c.vf.force.com';

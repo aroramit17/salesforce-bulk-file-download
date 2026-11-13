@@ -560,4 +560,468 @@
         <shortDescription>Fc Folder No Opener</shortDescription>
         <value>Open this window from the Save to a folder button in FileCrate.</value>
     </labels>
+    <labels>
+        <fullName>Fc_Mode</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Mode</shortDescription>
+        <value>Choose records by</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Mode_List_Views</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Mode List Views</shortDescription>
+        <value>List views</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Mode_Search</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Mode Search</shortDescription>
+        <value>Search</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Mode_Soql</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Mode Soql</shortDescription>
+        <value>SOQL</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Mode_Org_Files</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Mode Org Files</shortDescription>
+        <value>Org files</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Mode_History</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Mode History</shortDescription>
+        <value>History</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Selected_Views</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Selected Views</shortDescription>
+        <value>Selected list views</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Search_Term</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Search Term</shortDescription>
+        <value>Search by name</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Search_Run</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Search Run</shortDescription>
+        <value>Search</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Search_Empty</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Search Empty</shortDescription>
+        <value>No records found.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Name</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Name</shortDescription>
+        <value>Name</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Soql_Label</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Soql Label</shortDescription>
+        <value>Query</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Soql_Help</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Soql Help</shortDescription>
+        <value>Must start with SELECT Id FROM. Runs with your own access. Returns at most 10,000 records.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Soql_Run</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Soql Run</shortDescription>
+        <value>Run query</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Org_Source</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Org Source</shortDescription>
+        <value>Source</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Org_Documents</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Org Documents</shortDescription>
+        <value>Documents</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Org_Library</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Org Library</shortDescription>
+        <value>Library files</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Org_Static</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Org Static</shortDescription>
+        <value>Static resources</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Org_Event_Logs</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Org Event Logs</shortDescription>
+        <value>Event log files</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Org_Folder</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Org Folder</shortDescription>
+        <value>Folder</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Org_All_Folders</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Org All Folders</shortDescription>
+        <value>All folders</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Org_Library_Pick</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Org Library Pick</shortDescription>
+        <value>Library</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Org_Event_Type</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Org Event Type</shortDescription>
+        <value>Event type (blank for all)</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Org_From</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Org From</shortDescription>
+        <value>From</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Org_To</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Org To</shortDescription>
+        <value>To</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Org_Load</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Org Load</shortDescription>
+        <value>Load files</value>
+    </labels>
+    <labels>
+        <fullName>Fc_History_Empty</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc History Empty</shortDescription>
+        <value>No downloads yet.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Rerun</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Rerun</shortDescription>
+        <value>Run again</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Col_Job</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Col Job</shortDescription>
+        <value>Job</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Col_When</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Col When</shortDescription>
+        <value>When</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Col_Source</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Col Source</shortDescription>
+        <value>Source</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Col_Files</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Col Files</shortDescription>
+        <value>Files</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Col_Size</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Col Size</shortDescription>
+        <value>Size</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Col_Status</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Col Status</shortDescription>
+        <value>Status</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Col_By</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Col By</shortDescription>
+        <value>By</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Col_Destination</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Col Destination</shortDescription>
+        <value>Saved to</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Setup_Title</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Setup Title</shortDescription>
+        <value>FileCrate setup</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Setup_Settings</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Setup Settings</shortDescription>
+        <value>Settings</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Setup_Settings_Help</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Setup Settings Help</shortDescription>
+        <value>Change these in Setup, under Custom Metadata Types, FileCrate Settings, Default.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Setup_Storage</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Setup Storage</shortDescription>
+        <value>Storage</value>
+    </labels>
+    <labels>
+        <fullName>Fc_File_Storage</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc File Storage</shortDescription>
+        <value>File storage</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Data_Storage</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Data Storage</shortDescription>
+        <value>Data storage</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Setup_Access</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Setup Access</shortDescription>
+        <value>Access for you</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Api_Access</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Api Access</shortDescription>
+        <value>API access</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Checking</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Checking</shortDescription>
+        <value>Checking...</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Api_Ok</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Api Ok</shortDescription>
+        <value>Working</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Api_Failed</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Api Failed</shortDescription>
+        <value>Not working. Check the API Enabled permission.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Soql_Mode</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Soql Mode</shortDescription>
+        <value>SOQL mode</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Event_Log_Access</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Event Log Access</shortDescription>
+        <value>Event log files</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Yes</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Yes</shortDescription>
+        <value>Yes</value>
+    </labels>
+    <labels>
+        <fullName>Fc_No</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc No</shortDescription>
+        <value>No</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Set_MaxFiles</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Set MaxFiles</shortDescription>
+        <value>Max files per zip</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Set_MaxZip</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Set MaxZip</shortDescription>
+        <value>Max zip size (MB)</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Set_Attachments</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Set Attachments</shortDescription>
+        <value>Include attachments</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Set_Notes</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Set Notes</shortDescription>
+        <value>Include notes</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Set_Latest</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Set Latest</shortDescription>
+        <value>Latest version only</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Set_Pattern</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Set Pattern</shortDescription>
+        <value>Name pattern</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Set_Layout</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Set Layout</shortDescription>
+        <value>Folder layout</value>
+    </labels>
 </CustomLabels>

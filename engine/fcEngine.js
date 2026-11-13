@@ -295,11 +295,24 @@
             }
         }
 
+        // A small API call that proves this user can reach the REST API.
+        async function ping(message) {
+            try {
+                var limits = await (await request(apiBase + 'limits')).json();
+                var daily = (limits && limits.DailyApiRequests) || {};
+                send('pong', { requestId: message.requestId, ok: true, apiRemaining: daily.Remaining, apiMax: daily.Max });
+            } catch (e) {
+                send('pong', { requestId: message.requestId, ok: false, error: String(e.message || e) });
+            }
+        }
+
         async function handle(message) {
             if (!message || message.fc !== 1) {
                 return;
             }
-            if (message.type === 'listview') {
+            if (message.type === 'ping') {
+                await ping(message);
+            } else if (message.type === 'listview') {
                 await listViewIds(message);
             } else if (message.type === 'start') {
                 jobs[message.jobId] = {

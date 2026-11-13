@@ -230,3 +230,28 @@ export function engineOriginFor(host) {
     const rest = dot === -1 ? '' : domain.slice(dot);
     return 'https://' + first + '--c' + rest + '.vf.force.com';
 }
+
+/**
+ * Whether a window message really comes from the engine page. On a Salesforce
+ * page the engine origin is known, so the origin must match it exactly. On any
+ * other host (unit tests) the sender must be the window the component opened.
+ */
+export function isEngineMessage(input) {
+    const expected = engineOriginFor(input.host);
+    return expected === null ? input.sourceMatches === true : input.origin === expected;
+}
+
+/** A random 32 character hex string that ties an engine frame's messages to the component that embeds it. */
+export function makeNonce() {
+    const bytes = new Uint8Array(16);
+    // eslint-disable-next-line no-undef
+    const source = typeof crypto !== 'undefined' && crypto.getRandomValues ? crypto : null;
+    if (source) {
+        source.getRandomValues(bytes);
+    } else {
+        for (let i = 0; i < bytes.length; i++) {
+            bytes[i] = Math.floor(Math.random() * 256);
+        }
+    }
+    return Array.from(bytes, (b) => (b < 16 ? '0' : '') + b.toString(16)).join('');
+}

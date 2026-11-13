@@ -446,6 +446,17 @@ describe('c-fc-crate-builder', () => {
             expect(logJob.mock.calls[0][0].job.destination).toBe('Folder');
         });
 
+        it('sends the job only once even if the window reports ready again', async () => {
+            const el = await mount({ recordIds: ['001A'] });
+            const post = jest.spyOn(opened, 'postMessage').mockImplementation(() => {});
+            q(el, 'folder').click();
+            await flush();
+            fromFolderWindow({ type: 'ready' });
+            fromFolderWindow({ type: 'ready' });
+            await flush();
+            expect(post.mock.calls.filter((c) => c[0].type === 'start')).toHaveLength(1);
+        });
+
         it('explains when the browser blocks the window', async () => {
             openSpy.mockReturnValue(null);
             const el = await mount({ recordIds: ['001A'] });
@@ -453,5 +464,13 @@ describe('c-fc-crate-builder', () => {
             await flush();
             expect(q(el, 'error').textContent).toBe('c.Fc_Popup_Blocked');
         });
+    });
+
+    it('starts from the options of an earlier run when it is given them', async () => {
+        const el = await mount({ recordIds: ['001A'], initialOptions: { layout: 'Flat', includeAttachments: false, pattern: '{Title}.{ext}', maxZipBytes: 1 } });
+        expect(q(el, 'count').textContent).toBe('2');
+        expect(el.shadowRoot.querySelector('[data-option="layout"]').value).toBe('Flat');
+        expect(el.shadowRoot.querySelector('[data-option="pattern"]').value).toBe('{Title}.{ext}');
+        expect(q(el, 'parts-notice')).toBeNull();
     });
 });

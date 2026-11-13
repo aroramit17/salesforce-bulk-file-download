@@ -1,0 +1,12 @@
+<template>
+    <template lwc:if={errorMessage}>
+        <div class="slds-box slds-theme_error" role="alert" data-id="error">{errorMessage}</div>
+    </template>
+    <template lwc:elseif={isEmpty}>
+        <p data-id="empty">{labels.History_Empty}</p>
+    </template>
+    <template lwc:elseif={hasJobs}>
+        <lightning-datatable key-field="id" data={rows} columns={columns} hide-checkbox-column
+            onrowaction={handleRowAction}></lightning-datatable>
+    </template>
+</template>

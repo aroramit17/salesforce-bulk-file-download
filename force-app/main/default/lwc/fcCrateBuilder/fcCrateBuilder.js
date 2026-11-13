@@ -3,7 +3,7 @@ import getFiles from '@salesforce/apex/FcFileQueryService.getFiles';
 import getSettings from '@salesforce/apex/FcSettingsService.getSettings';
 import getRelatedIds from '@salesforce/apex/FcSelectionService.getRelatedIds';
 import logJob from '@salesforce/apex/FcJobService.logJob';
-import { filterRows, planParts, formatBytes, chunk, applyPattern, engineOriginFor } from 'c/fcCore';
+import { filterRows, planParts, formatBytes, chunk, applyPattern, isEngineMessage, makeNonce } from 'c/fcCore';
 import { LABELS, fmt } from 'c/fcLabels';
 
 const RECORDS_PER_CALL = 200;
@@ -12,18 +12,6 @@ const ROWS_PER_MESSAGE = 500;
 const MB = 1024 * 1024;
 const ENGINE_START_TIMEOUT_MS = 15000;
 const MAX_IDS_IN_REQUEST = 2000;
-
-function makeNonce() {
-    const bytes = new Uint8Array(16);
-    if (window.crypto && window.crypto.getRandomValues) {
-        window.crypto.getRandomValues(bytes);
-    } else {
-        for (let i = 0; i < bytes.length; i++) {
-            bytes[i] = Math.floor(Math.random() * 256);
-        }
-    }
-    return Array.from(bytes, (b) => (b < 16 ? '0' : '') + b.toString(16)).join('');
-}
 
 const TYPE_EXTENSIONS = {
     all: [],
@@ -57,6 +45,8 @@ export default class FcCrateBuilder extends LightningElement {
     @api presetLabel;
     /** What to store in the job history so the run can be repeated. */
     @api request;
+    /** Options saved with an earlier run, applied on top of the org defaults. */
+    @api initialOptions;
 
     labels = LABELS;
     // Each builder gets its own engine frame; the nonce ties the frame's messages to this builder.
@@ -184,6 +174,7 @@ export default class FcCrateBuilder extends LightningElement {
                 maxZipBytes: (s.maxZipMb || 1500) * MB,
                 maxFilesPerZip: s.maxFilesPerZip || 500
             };
+            this.applyInitialOptions();
             this.reload();
         } catch (e) {
             this.fail(e);
@@ -196,6 +187,28 @@ export default class FcCrateBuilder extends LightningElement {
             return this._listViews;
         }
         return this._listViewId ? [{ objectApiName: this.objectApiName, listViewId: this._listViewId }] : [];
+    }
+
+    applyInitialOptions() {
+        const saved = this.initialOptions;
+        if (!saved || typeof saved !== 'object') {
+            return;
+        }
+        const allowed = [
+            'includeFiles', 'includeAttachments', 'includeNotes', 'includeEnhancedNotes', 'latestOnly',
+            'extensions', 'createdFrom', 'createdTo', 'maxSizeBytes', 'layout', 'pattern'
+        ];
+        const next = { ...this.options };
+        allowed.forEach((key) => {
+            if (saved[key] !== undefined) {
+                next[key] = saved[key];
+            }
+        });
+        this.options = next;
+        const wanted = JSON.stringify((next.extensions || []).slice().sort());
+        this.typeChoice = Object.keys(TYPE_EXTENSIONS).find((k) => JSON.stringify(TYPE_EXTENSIONS[k].slice().sort()) === wanted) || 'all';
+        const sizeMb = String((next.maxSizeBytes || 0) / MB);
+        this.sizeChoice = ['0', '10', '100', '500'].includes(sizeMb) ? sizeMb : '0';
     }
 
     reload() {
@@ -318,11 +331,11 @@ export default class FcCrateBuilder extends LightningElement {
 
     isFromEngine(event) {
         const frame = this.engineFrame;
-        if (frame && event.source === frame.contentWindow) {
-            return true;
-        }
-        const expected = engineOriginFor(window.location.host);
-        return expected !== null && event.origin === expected;
+        return isEngineMessage({
+            host: window.location.host,
+            origin: event.origin,
+            sourceMatches: Boolean(frame) && event.source === frame.contentWindow
+        });
     }
 
     postToEngine(message) {
@@ -500,11 +513,18 @@ export default class FcCrateBuilder extends LightningElement {
     }
 
     handleFolderMessage(event, data) {
-        const expected = engineOriginFor(window.location.host);
-        if (event.source !== this._folderWindow && !(expected !== null && event.origin === expected)) {
+        const trusted = isEngineMessage({
+            host: window.location.host,
+            origin: event.origin,
+            sourceMatches: event.source === this._folderWindow
+        });
+        if (!trusted) {
             return;
         }
         if (data.type === 'ready') {
+            if (this._folderOrigin) {
+                return; // the job has already been handed over
+            }
             this._folderOrigin = event.origin;
             this.sendJob((message) => this.postToFolder(message), this._folderRows, 'folder');
         } else if (data.type === 'fatal') {

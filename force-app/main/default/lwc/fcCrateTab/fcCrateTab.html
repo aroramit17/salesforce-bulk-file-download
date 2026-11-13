@@ -1,23 +1,120 @@
 <template>
     <lightning-card title={labels.Title} icon-name="utility:package">
         <div class="slds-p-horizontal_medium">
-            <p class="slds-m-bottom_small">{labels.Tab_Intro}</p>
+            <lightning-radio-group class="slds-m-bottom_medium" type="button" label={labels.Mode} options={modeOptions}
+                value={mode} onchange={handleMode} data-id="mode"></lightning-radio-group>
+
             <template lwc:if={errorMessage}>
                 <div class="slds-box slds-theme_error slds-m-bottom_small" role="alert" data-id="error">{errorMessage}</div>
             </template>
-            <div class="slds-grid slds-wrap slds-gutters_small slds-m-bottom_medium">
-                <lightning-combobox class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2" label={labels.Object}
-                    placeholder={labels.Pick_Object} options={objects} value={objectApiName}
-                    onchange={handleObject} data-id="object"></lightning-combobox>
-                <lightning-combobox class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2" label={labels.List_View}
-                    placeholder={labels.Pick_List_View} options={listViews} value={listViewId} disabled={listViewDisabled}
-                    onchange={handleListView} data-id="listview"></lightning-combobox>
-            </div>
-            <template lwc:if={noListViews}>
-                <p class="slds-m-bottom_small" data-id="no-listviews">{labels.No_List_Views}</p>
+
+            <!-- List views -->
+            <template lwc:if={isListViews}>
+                <p class="slds-m-bottom_small">{labels.Tab_Intro}</p>
+                <div class="slds-grid slds-wrap slds-gutters_small slds-m-bottom_small">
+                    <lightning-combobox class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2" label={labels.Object}
+                        placeholder={labels.Pick_Object} options={objects} value={objectApiName}
+                        onchange={handleObject} data-id="object"></lightning-combobox>
+                    <lightning-combobox class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2" label={labels.List_View}
+                        placeholder={labels.Pick_List_View} options={listViews} value={listViewChoice} disabled={listViewDisabled}
+                        onchange={handleListView} data-id="listview"></lightning-combobox>
+                </div>
+                <template lwc:if={noListViews}>
+                    <p class="slds-m-bottom_small" data-id="no-listviews">{labels.No_List_Views}</p>
+                </template>
+                <template lwc:if={hasSelections}>
+                    <div class="slds-m-bottom_medium">
+                        <span class="slds-form-element__label">{labels.Selected_Views}</span>
+                        <div>
+                            <template for:each={selections} for:item="sel">
+                                <lightning-pill key={sel.listViewId} label={sel.label} class="slds-m-right_xx-small"
+                                    data-selection={sel.listViewId} onremove={handleRemoveSelection}></lightning-pill>
+                            </template>
+                        </div>
+                    </div>
+                    <c-fc-crate-builder list-views={selections} object-api-name={selectionObject} request={listViewRequest}
+                        initial-options={initialOptions}></c-fc-crate-builder>
+                </template>
             </template>
-            <template lwc:if={listViewId}>
-                <c-fc-crate-builder list-view-id={listViewId} object-api-name={objectApiName}></c-fc-crate-builder>
+
+            <!-- Search -->
+            <template lwc:if={isSearch}>
+                <div class="slds-grid slds-wrap slds-gutters_small slds-grid_vertical-align-end slds-m-bottom_small">
+                    <lightning-combobox class="slds-col slds-size_1-of-1 slds-medium-size_4-of-12" label={labels.Object}
+                        placeholder={labels.Pick_Object} options={objects} value={searchObject}
+                        onchange={handleSearchObject} data-id="search-object"></lightning-combobox>
+                    <lightning-input class="slds-col slds-size_1-of-1 slds-medium-size_6-of-12" type="search" label={labels.Search_Term}
+                        value={searchTerm} onchange={handleSearchTerm} data-id="search-term"></lightning-input>
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-12">
+                        <lightning-button label={labels.Search_Run} onclick={handleSearch} disabled={searchDisabled}
+                            data-id="search-run"></lightning-button>
+                    </div>
+                </div>
+                <template lwc:if={searchEmpty}>
+                    <p class="slds-m-bottom_small" data-id="search-empty">{labels.Search_Empty}</p>
+                </template>
+                <template lwc:if={hasSearchResults}>
+                    <div class="slds-m-bottom_medium" style="max-height: 20rem; overflow: auto">
+                        <lightning-datatable key-field="id" data={searchResults} columns={searchColumns}
+                            onrowselection={handleSearchSelection} data-id="search-results"></lightning-datatable>
+                    </div>
+                </template>
+                <template lwc:if={hasSelectedIds}>
+                    <c-fc-crate-builder record-ids={selectedIds} object-api-name={searchObject} request={searchRequest}
+                        initial-options={initialOptions}></c-fc-crate-builder>
+                </template>
+            </template>
+
+            <!-- SOQL -->
+            <template lwc:if={isSoql}>
+                <lightning-textarea class="slds-m-bottom_x-small" label={labels.Soql_Label} value={soqlText}
+                    placeholder="SELECT Id FROM Account WHERE ..." onchange={handleSoqlText} data-id="soql-text"></lightning-textarea>
+                <p class="slds-text-color_weak slds-m-bottom_small">{labels.Soql_Help}</p>
+                <lightning-button class="slds-m-bottom_medium slds-show" label={labels.Soql_Run} onclick={handleSoqlRun}
+                    disabled={soqlDisabled} data-id="soql-run"></lightning-button>
+                <template lwc:if={soqlIds}>
+                    <c-fc-crate-builder record-ids={soqlIds} object-api-name={soqlObject} request={soqlRequest}
+                        initial-options={initialOptions}></c-fc-crate-builder>
+                </template>
+            </template>
+
+            <!-- Org files -->
+            <template lwc:if={isOrgFiles}>
+                <div class="slds-grid slds-wrap slds-gutters_small slds-grid_vertical-align-end slds-m-bottom_medium">
+                    <lightning-combobox class="slds-col slds-size_1-of-1 slds-medium-size_3-of-12" label={labels.Org_Source}
+                        options={orgSourceOptions} value={orgSource} onchange={handleOrgSource} data-id="org-source"></lightning-combobox>
+                    <template lwc:if={isDocuments}>
+                        <lightning-combobox class="slds-col slds-size_1-of-1 slds-medium-size_4-of-12" label={labels.Org_Folder}
+                            options={folderOptions} value={orgFolder} onchange={handleOrgValue} data-org="orgFolder"
+                            data-id="org-folder"></lightning-combobox>
+                    </template>
+                    <template lwc:if={isLibrary}>
+                        <lightning-combobox class="slds-col slds-size_1-of-1 slds-medium-size_4-of-12" label={labels.Org_Library_Pick}
+                            options={libraries} value={orgLibrary} onchange={handleOrgValue} data-org="orgLibrary"
+                            data-id="org-library"></lightning-combobox>
+                    </template>
+                    <template lwc:if={isEventLogs}>
+                        <lightning-input class="slds-col slds-size_1-of-1 slds-medium-size_3-of-12" type="text" label={labels.Org_Event_Type}
+                            value={orgEventType} onchange={handleOrgValue} data-org="orgEventType" data-id="org-event-type"></lightning-input>
+                        <lightning-input class="slds-col slds-size_1-of-2 slds-medium-size_2-of-12" type="date" label={labels.Org_From}
+                            value={orgFrom} onchange={handleOrgValue} data-org="orgFrom" data-id="org-from"></lightning-input>
+                        <lightning-input class="slds-col slds-size_1-of-2 slds-medium-size_2-of-12" type="date" label={labels.Org_To}
+                            value={orgTo} onchange={handleOrgValue} data-org="orgTo" data-id="org-to"></lightning-input>
+                    </template>
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-12">
+                        <lightning-button label={labels.Org_Load} onclick={handleOrgLoad} disabled={orgLoadDisabled}
+                            data-id="org-load"></lightning-button>
+                    </div>
+                </div>
+                <template lwc:if={orgRows}>
+                    <c-fc-crate-builder preset-rows={orgRows} preset-label={orgLabel} request={orgRequest}
+                        initial-options={initialOptions}></c-fc-crate-builder>
+                </template>
+            </template>
+
+            <!-- History -->
+            <template lwc:if={isHistory}>
+                <c-fc-job-history onrerun={handleRerun}></c-fc-job-history>
             </template>
         </div>
     </lightning-card>

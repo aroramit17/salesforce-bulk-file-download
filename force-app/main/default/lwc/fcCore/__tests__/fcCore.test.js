@@ -13,7 +13,9 @@ import {
     formatBytes,
     zipName,
     chunk,
-    engineOriginFor
+    engineOriginFor,
+    isEngineMessage,
+    makeNonce
 } from 'c/fcCore';
 
 describe('sanitizeSegment', () => {
@@ -277,5 +279,28 @@ describe('engineOriginFor', () => {
     it('is null for any other host', () => {
         expect(engineOriginFor('evil.example')).toBeNull();
         expect(engineOriginFor('lightning.force.com.evil.example')).toBeNull();
+    });
+});
+
+describe('isEngineMessage', () => {
+    const host = 'acme.lightning.force.com';
+    const engine = 'https://acme--c.vf.force.com';
+    it('accepts a message from the org engine origin', () => {
+        expect(isEngineMessage({ host, origin: engine, sourceMatches: true })).toBe(true);
+        expect(isEngineMessage({ host, origin: engine, sourceMatches: false })).toBe(true);
+    });
+    it('rejects another origin even when it comes from the expected window', () => {
+        expect(isEngineMessage({ host, origin: 'https://evil.example', sourceMatches: true })).toBe(false);
+    });
+    it('falls back to the window identity when the host is not a Salesforce page', () => {
+        expect(isEngineMessage({ host: 'localhost', origin: 'https://anything.example', sourceMatches: true })).toBe(true);
+        expect(isEngineMessage({ host: 'localhost', origin: 'https://anything.example', sourceMatches: false })).toBe(false);
+    });
+});
+
+describe('makeNonce', () => {
+    it('returns 32 hex characters and differs between calls', () => {
+        expect(makeNonce()).toMatch(/^[0-9a-f]{32}$/);
+        expect(makeNonce()).not.toBe(makeNonce());
     });
 });

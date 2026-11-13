@@ -1,0 +1,36 @@
+<template>
+    <lightning-card title={labels.Setup_Title} icon-name="utility:settings">
+        <div class="slds-p-horizontal_medium slds-is-relative">
+            <iframe src={engineUrl} title="FileCrate engine" class="fc-engine" aria-hidden="true" tabindex="-1"></iframe>
+            <template lwc:if={errorMessage}>
+                <div class="slds-box slds-theme_error slds-m-bottom_small" role="alert" data-id="error">{errorMessage}</div>
+            </template>
+            <template lwc:if={status}>
+                <h2 class="slds-text-heading_small slds-m-bottom_x-small">{labels.Setup_Settings}</h2>
+                <p class="slds-text-color_weak slds-m-bottom_small">{labels.Setup_Settings_Help}</p>
+                <dl class="slds-list_horizontal slds-wrap slds-m-bottom_medium">
+                    <template for:each={settingRows} for:item="row">
+                        <dt key={row.labelKey} class="slds-item_label slds-text-color_weak">{row.label}</dt>
+                        <dd key={row.key} class="slds-item_detail" data-id={row.dataId}>{row.value}</dd>
+                    </template>
+                </dl>
+                <h2 class="slds-text-heading_small slds-m-bottom_x-small">{labels.Setup_Storage}</h2>
+                <dl class="slds-list_horizontal slds-wrap slds-m-bottom_medium">
+                    <dt class="slds-item_label slds-text-color_weak">{labels.File_Storage}</dt>
+                    <dd class="slds-item_detail" data-id="file-storage">{fileStorageText}</dd>
+                    <dt class="slds-item_label slds-text-color_weak">{labels.Data_Storage}</dt>
+                    <dd class="slds-item_detail" data-id="data-storage">{dataStorageText}</dd>
+                </dl>
+                <h2 class="slds-text-heading_small slds-m-bottom_x-small">{labels.Setup_Access}</h2>
+                <dl class="slds-list_horizontal slds-wrap">
+                    <dt class="slds-item_label slds-text-color_weak">{labels.Api_Access}</dt>
+                    <dd class="slds-item_detail" data-id="api">{apiText}</dd>
+                    <dt class="slds-item_label slds-text-color_weak">{labels.Soql_Mode}</dt>
+                    <dd class="slds-item_detail" data-id="soql">{soqlText}</dd>
+                    <dt class="slds-item_label slds-text-color_weak">{labels.Event_Log_Access}</dt>
+                    <dd class="slds-item_detail" data-id="event-logs">{eventLogText}</dd>
+                </dl>
+            </template>
+        </div>
+    </lightning-card>
+</template>

@@ -65,6 +65,64 @@ import Fc_Choose_Folder from '@salesforce/label/c.Fc_Choose_Folder';
 import Fc_Folder_Working from '@salesforce/label/c.Fc_Folder_Working';
 import Fc_Folder_Done from '@salesforce/label/c.Fc_Folder_Done';
 import Fc_Folder_No_Opener from '@salesforce/label/c.Fc_Folder_No_Opener';
+import Fc_Mode from '@salesforce/label/c.Fc_Mode';
+import Fc_Mode_List_Views from '@salesforce/label/c.Fc_Mode_List_Views';
+import Fc_Mode_Search from '@salesforce/label/c.Fc_Mode_Search';
+import Fc_Mode_Soql from '@salesforce/label/c.Fc_Mode_Soql';
+import Fc_Mode_Org_Files from '@salesforce/label/c.Fc_Mode_Org_Files';
+import Fc_Mode_History from '@salesforce/label/c.Fc_Mode_History';
+import Fc_Selected_Views from '@salesforce/label/c.Fc_Selected_Views';
+import Fc_Search_Term from '@salesforce/label/c.Fc_Search_Term';
+import Fc_Search_Run from '@salesforce/label/c.Fc_Search_Run';
+import Fc_Search_Empty from '@salesforce/label/c.Fc_Search_Empty';
+import Fc_Name from '@salesforce/label/c.Fc_Name';
+import Fc_Soql_Label from '@salesforce/label/c.Fc_Soql_Label';
+import Fc_Soql_Help from '@salesforce/label/c.Fc_Soql_Help';
+import Fc_Soql_Run from '@salesforce/label/c.Fc_Soql_Run';
+import Fc_Org_Source from '@salesforce/label/c.Fc_Org_Source';
+import Fc_Org_Documents from '@salesforce/label/c.Fc_Org_Documents';
+import Fc_Org_Library from '@salesforce/label/c.Fc_Org_Library';
+import Fc_Org_Static from '@salesforce/label/c.Fc_Org_Static';
+import Fc_Org_Event_Logs from '@salesforce/label/c.Fc_Org_Event_Logs';
+import Fc_Org_Folder from '@salesforce/label/c.Fc_Org_Folder';
+import Fc_Org_All_Folders from '@salesforce/label/c.Fc_Org_All_Folders';
+import Fc_Org_Library_Pick from '@salesforce/label/c.Fc_Org_Library_Pick';
+import Fc_Org_Event_Type from '@salesforce/label/c.Fc_Org_Event_Type';
+import Fc_Org_From from '@salesforce/label/c.Fc_Org_From';
+import Fc_Org_To from '@salesforce/label/c.Fc_Org_To';
+import Fc_Org_Load from '@salesforce/label/c.Fc_Org_Load';
+import Fc_History_Empty from '@salesforce/label/c.Fc_History_Empty';
+import Fc_Rerun from '@salesforce/label/c.Fc_Rerun';
+import Fc_Col_Job from '@salesforce/label/c.Fc_Col_Job';
+import Fc_Col_When from '@salesforce/label/c.Fc_Col_When';
+import Fc_Col_Source from '@salesforce/label/c.Fc_Col_Source';
+import Fc_Col_Files from '@salesforce/label/c.Fc_Col_Files';
+import Fc_Col_Size from '@salesforce/label/c.Fc_Col_Size';
+import Fc_Col_Status from '@salesforce/label/c.Fc_Col_Status';
+import Fc_Col_By from '@salesforce/label/c.Fc_Col_By';
+import Fc_Col_Destination from '@salesforce/label/c.Fc_Col_Destination';
+import Fc_Setup_Title from '@salesforce/label/c.Fc_Setup_Title';
+import Fc_Setup_Settings from '@salesforce/label/c.Fc_Setup_Settings';
+import Fc_Setup_Settings_Help from '@salesforce/label/c.Fc_Setup_Settings_Help';
+import Fc_Setup_Storage from '@salesforce/label/c.Fc_Setup_Storage';
+import Fc_File_Storage from '@salesforce/label/c.Fc_File_Storage';
+import Fc_Data_Storage from '@salesforce/label/c.Fc_Data_Storage';
+import Fc_Setup_Access from '@salesforce/label/c.Fc_Setup_Access';
+import Fc_Api_Access from '@salesforce/label/c.Fc_Api_Access';
+import Fc_Checking from '@salesforce/label/c.Fc_Checking';
+import Fc_Api_Ok from '@salesforce/label/c.Fc_Api_Ok';
+import Fc_Api_Failed from '@salesforce/label/c.Fc_Api_Failed';
+import Fc_Soql_Mode from '@salesforce/label/c.Fc_Soql_Mode';
+import Fc_Event_Log_Access from '@salesforce/label/c.Fc_Event_Log_Access';
+import Fc_Yes from '@salesforce/label/c.Fc_Yes';
+import Fc_No from '@salesforce/label/c.Fc_No';
+import Fc_Set_MaxFiles from '@salesforce/label/c.Fc_Set_MaxFiles';
+import Fc_Set_MaxZip from '@salesforce/label/c.Fc_Set_MaxZip';
+import Fc_Set_Attachments from '@salesforce/label/c.Fc_Set_Attachments';
+import Fc_Set_Notes from '@salesforce/label/c.Fc_Set_Notes';
+import Fc_Set_Latest from '@salesforce/label/c.Fc_Set_Latest';
+import Fc_Set_Pattern from '@salesforce/label/c.Fc_Set_Pattern';
+import Fc_Set_Layout from '@salesforce/label/c.Fc_Set_Layout';
 
 // Every piece of user-facing text, keyed without the Fc_ prefix.
 export const LABELS = {
@@ -135,6 +193,64 @@ export const LABELS = {
     Folder_Working: Fc_Folder_Working,
     Folder_Done: Fc_Folder_Done,
     Folder_No_Opener: Fc_Folder_No_Opener,
+    Mode: Fc_Mode,
+    Mode_List_Views: Fc_Mode_List_Views,
+    Mode_Search: Fc_Mode_Search,
+    Mode_Soql: Fc_Mode_Soql,
+    Mode_Org_Files: Fc_Mode_Org_Files,
+    Mode_History: Fc_Mode_History,
+    Selected_Views: Fc_Selected_Views,
+    Search_Term: Fc_Search_Term,
+    Search_Run: Fc_Search_Run,
+    Search_Empty: Fc_Search_Empty,
+    Name: Fc_Name,
+    Soql_Label: Fc_Soql_Label,
+    Soql_Help: Fc_Soql_Help,
+    Soql_Run: Fc_Soql_Run,
+    Org_Source: Fc_Org_Source,
+    Org_Documents: Fc_Org_Documents,
+    Org_Library: Fc_Org_Library,
+    Org_Static: Fc_Org_Static,
+    Org_Event_Logs: Fc_Org_Event_Logs,
+    Org_Folder: Fc_Org_Folder,
+    Org_All_Folders: Fc_Org_All_Folders,
+    Org_Library_Pick: Fc_Org_Library_Pick,
+    Org_Event_Type: Fc_Org_Event_Type,
+    Org_From: Fc_Org_From,
+    Org_To: Fc_Org_To,
+    Org_Load: Fc_Org_Load,
+    History_Empty: Fc_History_Empty,
+    Rerun: Fc_Rerun,
+    Col_Job: Fc_Col_Job,
+    Col_When: Fc_Col_When,
+    Col_Source: Fc_Col_Source,
+    Col_Files: Fc_Col_Files,
+    Col_Size: Fc_Col_Size,
+    Col_Status: Fc_Col_Status,
+    Col_By: Fc_Col_By,
+    Col_Destination: Fc_Col_Destination,
+    Setup_Title: Fc_Setup_Title,
+    Setup_Settings: Fc_Setup_Settings,
+    Setup_Settings_Help: Fc_Setup_Settings_Help,
+    Setup_Storage: Fc_Setup_Storage,
+    File_Storage: Fc_File_Storage,
+    Data_Storage: Fc_Data_Storage,
+    Setup_Access: Fc_Setup_Access,
+    Api_Access: Fc_Api_Access,
+    Checking: Fc_Checking,
+    Api_Ok: Fc_Api_Ok,
+    Api_Failed: Fc_Api_Failed,
+    Soql_Mode: Fc_Soql_Mode,
+    Event_Log_Access: Fc_Event_Log_Access,
+    Yes: Fc_Yes,
+    No: Fc_No,
+    Set_MaxFiles: Fc_Set_MaxFiles,
+    Set_MaxZip: Fc_Set_MaxZip,
+    Set_Attachments: Fc_Set_Attachments,
+    Set_Notes: Fc_Set_Notes,
+    Set_Latest: Fc_Set_Latest,
+    Set_Pattern: Fc_Set_Pattern,
+    Set_Layout: Fc_Set_Layout,
 };
 
 /** Fills {0}, {1}... placeholders in a label. */

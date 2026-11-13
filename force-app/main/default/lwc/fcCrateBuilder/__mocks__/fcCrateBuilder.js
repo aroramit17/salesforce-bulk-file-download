@@ -10,4 +10,5 @@ export default class FcCrateBuilder extends LightningElement {
     @api presetRows;
     @api presetLabel;
     @api request;
+    @api initialOptions;
 }

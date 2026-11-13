@@ -233,7 +233,32 @@ function engineOriginFor(host) {
     return 'https://' + first + '--c' + rest + '.vf.force.com';
 }
 
-root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows, planParts, csvEscape, toCsv, manifestCsv, errorsCsv, isStored, formatBytes, zipName, chunk, engineOriginFor };
+/**
+ * Whether a window message really comes from the engine page. On a Salesforce
+ * page the engine origin is known, so the origin must match it exactly. On any
+ * other host (unit tests) the sender must be the window the component opened.
+ */
+function isEngineMessage(input) {
+    const expected = engineOriginFor(input.host);
+    return expected === null ? input.sourceMatches === true : input.origin === expected;
+}
+
+/** A random 32 character hex string that ties an engine frame's messages to the component that embeds it. */
+function makeNonce() {
+    const bytes = new Uint8Array(16);
+    // eslint-disable-next-line no-undef
+    const source = typeof crypto !== 'undefined' && crypto.getRandomValues ? crypto : null;
+    if (source) {
+        source.getRandomValues(bytes);
+    } else {
+        for (let i = 0; i < bytes.length; i++) {
+            bytes[i] = Math.floor(Math.random() * 256);
+        }
+    }
+    return Array.from(bytes, (b) => (b < 16 ? '0' : '') + b.toString(16)).join('');
+}
+
+root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows, planParts, csvEscape, toCsv, manifestCsv, errorsCsv, isStored, formatBytes, zipName, chunk, engineOriginFor, isEngineMessage, makeNonce };
 })(typeof self !== "undefined" ? self : this);
 // fcEngine: fetches file bytes and builds zips. No DOM access; every
 // dependency is injected so the same code runs in Jest and in FcEngine.page.
@@ -532,11 +557,24 @@ root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows
             }
         }
 
+        // A small API call that proves this user can reach the REST API.
+        async function ping(message) {
+            try {
+                var limits = await (await request(apiBase + 'limits')).json();
+                var daily = (limits && limits.DailyApiRequests) || {};
+                send('pong', { requestId: message.requestId, ok: true, apiRemaining: daily.Remaining, apiMax: daily.Max });
+            } catch (e) {
+                send('pong', { requestId: message.requestId, ok: false, error: String(e.message || e) });
+            }
+        }
+
         async function handle(message) {
             if (!message || message.fc !== 1) {
                 return;
             }
-            if (message.type === 'listview') {
+            if (message.type === 'ping') {
+                await ping(message);
+            } else if (message.type === 'listview') {
                 await listViewIds(message);
             } else if (message.type === 'start') {
                 jobs[message.jobId] = {
