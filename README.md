@@ -6,7 +6,7 @@ MIT licensed. Runs entirely inside your Salesforce org and your browser. No exte
 
 ![Screen recording: pick the Account object and a list view, preview 21 files, filter to PDFs, change the folder layout, and download one zip](docs/images/filecrate-demo.gif)
 
-A 30 second screen recording of FileCrate in a Developer Edition org. Higher quality video: [filecrate-demo.mp4](docs/images/filecrate-demo.mp4).
+A 35 second screen recording of FileCrate in a Developer Edition org. Higher quality video: [filecrate-demo.mp4](docs/images/filecrate-demo.mp4).
 
 ## What it does
 
