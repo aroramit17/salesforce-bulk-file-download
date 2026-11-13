@@ -4,9 +4,9 @@ Open source bulk file download for Salesforce. Select records, click once, and g
 
 MIT licensed. Runs entirely inside your Salesforce org and your browser. No external servers.
 
-![FileCrate walkthrough: pick a list view, preview the files, filter, download a zip, and the other ways to choose records](docs/images/filecrate-demo.gif)
+![Screen recording: pick the Account object and a list view, preview 21 files, filter to PDFs, change the folder layout, and download one zip](docs/images/filecrate-demo.gif)
 
-The same walkthrough is available as a video: [filecrate-demo.mp4](docs/images/filecrate-demo.mp4).
+A 30 second screen recording of FileCrate in a Developer Edition org. Higher quality video: [filecrate-demo.mp4](docs/images/filecrate-demo.mp4).
 
 ## What it does
 
@@ -30,6 +30,8 @@ Users only ever get files they can already open in Salesforce. All Apex runs `wi
 ## Screenshots
 
 Taken in a Developer Edition org with sample records.
+
+![Captioned tour of the list view, filter, download, SOQL, search, org files and setup screens](docs/images/filecrate-tour.gif)
 
 | | |
 |---|---|
