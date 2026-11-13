@@ -15,6 +15,10 @@ Apex returns file **metadata** only. File **bytes** go from Salesforce straight 
 | `FcFileQueryService` (Apex) | File rows for up to 200 records per call. |
 | `FcRecordService` (Apex) | Record names, object list, list views. |
 | `FcSettingsService` (Apex) | Settings with defaults. |
+| `FcSelectionService` (Apex) | Related record Ids, name search, SOQL mode. |
+| `FcOrgFileService` (Apex) | Rows for Documents, Library files, Static Resources and Event Log files. |
+| `FcJobService` (Apex) | Job history. |
+| `fcJobHistory`, `fcSetup` (LWC) | History table with re-run; admin status page. |
 | `FcEngine` (Visualforce page) | Hidden iframe. Fetches bytes over REST and zips with fflate. |
 | `fcCore` + `engine/fcEngine.js` | The logic, shared and unit tested. |
 
@@ -33,6 +37,10 @@ The builder and the engine talk with `window.postMessage`. Every message is `{ f
 | engine → builder | `ids` | Those Ids |
 | builder → engine | `start`, `rows`, `cancel` | Run a job; rows arrive in pages of 500 |
 | engine → builder | `progress`, `part`, `done`, `fatal` | Progress, a finished zip as a Blob, the outcome |
+| setup → engine | `ping` | Check that the REST API answers |
+| engine → setup | `pong` | The result |
+
+Every engine message carries the `nonce` the embedding component put in the engine URL, so several components on one page never read each other's messages. List view requests carry a `requestId`, and a late answer to an older request is dropped.
 
 ## A download, step by step
 
@@ -46,3 +54,15 @@ The builder and the engine talk with `window.postMessage`. Every message is `{ f
 ## Flow pages
 
 Salesforce serves `/flow/...` pages on the org's Visualforce domain, not the Lightning domain. The engine therefore accepts two parent origins: the org's Lightning origin and its own Visualforce origin.
+
+## Folder output
+
+Browsers do not allow the folder picker inside a cross-origin iframe. For "Save to a folder" the builder therefore opens the engine page as its own window (`/apex/FcEngine?mode=folder`). The window shows one button; once the user has picked a folder the engine writes each file through a small sink around the folder handle, then `manifest.csv` and, if needed, `errors.csv`. No zip is built, so there are no parts and no per-file size limit.
+
+## Selection modes
+
+The builder accepts three kinds of input: record Ids, list views (resolved to Ids by the engine, which has API access), or ready-made file rows for org-wide sources. Whatever the tab or page hands it, the rest of the run is the same.
+
+## Job history
+
+After each run the builder writes one `FcJob__c` row with the counts and the request (mode, selection, options) as JSON. Sharing on `FcJob__c` is private. "Run again" in the history hands that request back to the tab.

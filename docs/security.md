@@ -14,8 +14,22 @@ There are no callouts and no third-party servers. Bytes travel from your Salesfo
 
 - `FcEngine` is a Visualforce page that runs in a hidden iframe. It uses the page's session Id to call the REST API on the same origin.
 - It only accepts messages from its direct parent window, and only when that parent is on this org's Lightning origin or on the same Visualforce origin (where Salesforce serves flow pages). It replies only to the origin that spoke.
-- The builder only accepts messages from its own iframe.
+- The builder only accepts a message when it carries the builder's own nonce and comes from the org's exact Visualforce origin, which is derived from the page's own host.
 - Granting access to the page (through the permission sets) does not grant access to any file. Access is decided per file by Salesforce.
+
+## SOQL mode
+
+- Only users with the `Fc_Run_SOQL` custom permission can use it. The check is made in Apex, not just in the screen.
+- Only a single `SELECT Id FROM <object> ...` statement is accepted. Other select lists, subqueries in the select list, and second statements are rejected.
+- The query runs in user mode, so it returns only records the user can already see, and it is capped at 10,000 rows.
+
+## Search
+
+Only letters and digits from the search box are used, each as a prefix-matched word. Nothing typed can act as search syntax.
+
+## Job history
+
+`FcJob__c` is private. A user sees their own runs. `FileCrate_Admin` grants View All. The stored request can contain record Ids and a SOQL string, but never file contents.
 
 ## CSV safety
 
