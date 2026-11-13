@@ -27,4 +27,12 @@
     <description>Everything in FileCrate User plus admin features.</description>
     <hasActivationRequired>false</hasActivationRequired>
     <label>FileCrate Admin</label>
+    <tabSettings>
+        <tab>FileCrate</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>RunFlow</name>
+    </userPermissions>
 </PermissionSet>

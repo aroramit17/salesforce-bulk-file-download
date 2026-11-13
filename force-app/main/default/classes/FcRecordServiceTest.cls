@@ -63,6 +63,14 @@ private class FcRecordServiceTest {
     }
 
     @IsTest
+    static void doesNotOfferSetupObjects() {
+        for (Map<String, String> o : FcRecordService.getObjects()) {
+            Assert.areNotEqual('ApexClass', o.get('value'));
+            Assert.areNotEqual('ApexTrigger', o.get('value'));
+        }
+    }
+
+    @IsTest
     static void listsListViewsForAnObject() {
         List<Map<String, String>> views = FcRecordService.getListViews('Account');
         Assert.isNotNull(views);

@@ -206,7 +206,27 @@ function chunk(arr, n) {
     return out;
 }
 
-root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows, planParts, csvEscape, toCsv, manifestCsv, errorsCsv, isStored, formatBytes, zipName, chunk };
+/**
+ * The origin FcEngine.page is served from, worked out from the host of the page
+ * that embeds it. Null when the host is neither Lightning nor Visualforce.
+ */
+function engineOriginFor(host) {
+    const lightning = '.lightning.force.com';
+    const h = String(host || '').toLowerCase();
+    if (h.endsWith('.vf.force.com')) {
+        return 'https://' + h;
+    }
+    if (!h.endsWith(lightning)) {
+        return null;
+    }
+    const domain = h.slice(0, -lightning.length);
+    const dot = domain.indexOf('.');
+    const first = dot === -1 ? domain : domain.slice(0, dot);
+    const rest = dot === -1 ? '' : domain.slice(dot);
+    return 'https://' + first + '--c' + rest + '.vf.force.com';
+}
+
+root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows, planParts, csvEscape, toCsv, manifestCsv, errorsCsv, isStored, formatBytes, zipName, chunk, engineOriginFor };
 })(typeof self !== "undefined" ? self : this);
 // fcEngine: fetches file bytes and builds zips. No DOM access; every
 // dependency is injected so the same code runs in Jest and in FcEngine.page.
@@ -477,5 +497,29 @@ root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows
         return { handle: handle };
     }
 
-    return { createEngine: createEngine };
+    // Tracks which parent window origin the engine may talk to. The engine is
+    // embedded from Lightning pages and from flow pages, which Salesforce
+    // serves on the Visualforce domain, so more than one origin is allowed.
+    function createParentLink(allowedOrigins, postFn) {
+        var parent = null;
+        return {
+            announce: function (message) {
+                allowedOrigins.forEach(function (origin) { postFn(message, origin); });
+            },
+            accept: function (origin) {
+                if (allowedOrigins.indexOf(origin) === -1) {
+                    return false;
+                }
+                parent = origin;
+                return true;
+            },
+            post: function (message) {
+                if (parent) {
+                    postFn(message, parent);
+                }
+            }
+        };
+    }
+
+    return { createEngine: createEngine, createParentLink: createParentLink };
 });

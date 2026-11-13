@@ -10,33 +10,38 @@
   FileCrate engine. Runs inside an iframe owned by the fcCrateBuilder LWC.
   It fetches file bytes from the REST API with this page's session, zips them
   in the browser and hands each finished zip to the parent as a Blob.
-  It only accepts messages from, and only replies to, this org's Lightning origin.
+  It only accepts messages from, and only replies to, this org's Lightning origin
+  or this same Visualforce origin (where Salesforce serves flow pages).
 -->
 <script src="{!URLFOR($Resource.fflate, 'index.js')}"></script>
 <script src="{!$Resource.fcEngineBundle}"></script>
 <script>
 (function () {
     'use strict';
-    var parentOrigin = '{!JSENCODE(lightningOrigin)}';
     if (window.parent === window) {
         return;
     }
+    // Parents: this org's Lightning pages, and flow pages on this same Visualforce origin.
+    var link = window.FcEngine.createParentLink(
+        ['{!JSENCODE(lightningOrigin)}', window.location.origin],
+        function (message, origin) { window.parent.postMessage(message, origin); }
+    );
     var engine = window.FcEngine.createEngine({
         fflate: window.fflate,
         core: window.FcCore,
         fetchFn: function (url, init) { return window.fetch(url, init); },
-        post: function (message) { window.parent.postMessage(message, parentOrigin); },
+        post: link.post,
         apiBase: '/services/data/v{!JSENCODE(apiVersion)}/',
         sessionId: '{!JSENCODE($Api.Session_ID)}',
         baseUrl: '{!JSENCODE(baseUrl)}'
     });
     window.addEventListener('message', function (event) {
-        if (event.origin !== parentOrigin || event.source !== window.parent) {
+        if (event.source !== window.parent || !link.accept(event.origin)) {
             return;
         }
         engine.handle(event.data);
     });
-    window.parent.postMessage({ fc: 1, type: 'ready' }, parentOrigin);
+    link.announce({ fc: 1, type: 'ready' });
 })();
 </script>
 </body>

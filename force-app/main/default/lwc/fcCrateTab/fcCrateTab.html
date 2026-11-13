@@ -1,0 +1,24 @@
+<template>
+    <lightning-card title={labels.Title} icon-name="utility:package">
+        <div class="slds-p-horizontal_medium">
+            <p class="slds-m-bottom_small">{labels.Tab_Intro}</p>
+            <template lwc:if={errorMessage}>
+                <div class="slds-box slds-theme_error slds-m-bottom_small" role="alert" data-id="error">{errorMessage}</div>
+            </template>
+            <div class="slds-grid slds-wrap slds-gutters_small slds-m-bottom_medium">
+                <lightning-combobox class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2" label={labels.Object}
+                    placeholder={labels.Pick_Object} options={objects} value={objectApiName}
+                    onchange={handleObject} data-id="object"></lightning-combobox>
+                <lightning-combobox class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2" label={labels.List_View}
+                    placeholder={labels.Pick_List_View} options={listViews} value={listViewId} disabled={listViewDisabled}
+                    onchange={handleListView} data-id="listview"></lightning-combobox>
+            </div>
+            <template lwc:if={noListViews}>
+                <p class="slds-m-bottom_small" data-id="no-listviews">{labels.No_List_Views}</p>
+            </template>
+            <template lwc:if={listViewId}>
+                <c-fc-crate-builder list-view-id={listViewId} object-api-name={objectApiName}></c-fc-crate-builder>
+            </template>
+        </div>
+    </lightning-card>
+</template>

@@ -23,4 +23,12 @@
     <description>Download files in bulk with FileCrate.</description>
     <hasActivationRequired>false</hasActivationRequired>
     <label>FileCrate User</label>
+    <tabSettings>
+        <tab>FileCrate</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <userPermissions>
+        <enabled>true</enabled>
+        <name>RunFlow</name>
+    </userPermissions>
 </PermissionSet>

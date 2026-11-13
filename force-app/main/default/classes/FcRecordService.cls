@@ -85,12 +85,25 @@ public with sharing class FcRecordService {
         return result;
     }
 
+    /**
+     * Objects offered in the FileCrate tab: every object that has a tab in some
+     * app, plus custom objects. Setup objects such as ApexClass are left out.
+     */
     @AuraEnabled(cacheable=true)
     public static List<Map<String, String>> getObjects() {
+        Set<String> withTab = new Set<String>();
+        for (Schema.DescribeTabSetResult app : Schema.describeTabs()) {
+            for (Schema.DescribeTabResult tab : app.getTabs()) {
+                if (String.isNotBlank(tab.getSobjectName())) {
+                    withTab.add(tab.getSobjectName());
+                }
+            }
+        }
         List<Map<String, String>> objects = new List<Map<String, String>>();
         for (Schema.SObjectType t : Schema.getGlobalDescribe().values()) {
             Schema.DescribeSObjectResult d = t.getDescribe(SObjectDescribeOptions.DEFERRED);
-            if (d.isAccessible() && d.isQueryable() && d.isSearchable() && !d.isCustomSetting()) {
+            Boolean offered = withTab.contains(d.getName()) || (d.isCustom() && d.getName().endsWith('__c'));
+            if (offered && d.isAccessible() && d.isQueryable() && !d.isCustomSetting()) {
                 objects.add(new Map<String, String>{ 'value' => d.getName(), 'label' => d.getLabel() });
             }
         }

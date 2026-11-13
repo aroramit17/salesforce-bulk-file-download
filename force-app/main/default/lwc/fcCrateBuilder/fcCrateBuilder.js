@@ -1,7 +1,7 @@
 import { LightningElement, api } from 'lwc';
 import getFiles from '@salesforce/apex/FcFileQueryService.getFiles';
 import getSettings from '@salesforce/apex/FcSettingsService.getSettings';
-import { filterRows, planParts, formatBytes, chunk, applyPattern } from 'c/fcCore';
+import { filterRows, planParts, formatBytes, chunk, applyPattern, engineOriginFor } from 'c/fcCore';
 import { LABELS, fmt } from 'c/fcLabels';
 
 const RECORDS_PER_CALL = 200;
@@ -185,26 +185,12 @@ export default class FcCrateBuilder extends LightningElement {
         return this.template.querySelector('iframe');
     }
 
-    /** The org's Visualforce origin, derived from the Lightning host. Null outside Lightning. */
-    get expectedEngineOrigin() {
-        const host = window.location.host;
-        const marker = '.lightning.force.com';
-        if (!host.endsWith(marker)) {
-            return null;
-        }
-        const domain = host.slice(0, -marker.length);
-        const dot = domain.indexOf('.');
-        const first = dot === -1 ? domain : domain.slice(0, dot);
-        const rest = dot === -1 ? '' : domain.slice(dot);
-        return 'https://' + first + '--c' + rest + '.vf.force.com';
-    }
-
     isFromEngine(event) {
         const frame = this.engineFrame;
         if (frame && event.source === frame.contentWindow) {
             return true;
         }
-        const expected = this.expectedEngineOrigin;
+        const expected = engineOriginFor(window.location.host);
         return expected !== null && event.origin === expected;
     }
 

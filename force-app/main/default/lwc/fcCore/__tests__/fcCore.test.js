@@ -12,7 +12,8 @@ import {
     isStored,
     formatBytes,
     zipName,
-    chunk
+    chunk,
+    engineOriginFor
 } from 'c/fcCore';
 
 describe('sanitizeSegment', () => {
@@ -236,5 +237,22 @@ describe('small helpers', () => {
     it('chunks arrays', () => {
         expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
         expect(chunk([], 2)).toEqual([]);
+    });
+});
+
+describe('engineOriginFor', () => {
+    it('maps a production Lightning host to the org Visualforce origin', () => {
+        expect(engineOriginFor('acme.lightning.force.com')).toBe('https://acme--c.vf.force.com');
+    });
+    it('maps sandbox and scratch hosts', () => {
+        expect(engineOriginFor('acme--uat.sandbox.lightning.force.com')).toBe('https://acme--uat--c.sandbox.vf.force.com');
+        expect(engineOriginFor('x-dev-ed.scratch.lightning.force.com')).toBe('https://x-dev-ed--c.scratch.vf.force.com');
+    });
+    it('is the page origin itself when the page already runs on the Visualforce domain', () => {
+        expect(engineOriginFor('acme--c.vf.force.com')).toBe('https://acme--c.vf.force.com');
+    });
+    it('is null for any other host', () => {
+        expect(engineOriginFor('evil.example')).toBeNull();
+        expect(engineOriginFor('lightning.force.com.evil.example')).toBeNull();
     });
 });

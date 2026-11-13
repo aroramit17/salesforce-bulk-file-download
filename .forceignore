@@ -2,3 +2,4 @@
 **/jsconfig.json
 **/.eslintrc.json
 package.xml
+**/__mocks__/**

@@ -203,3 +203,23 @@ export function chunk(arr, n) {
     }
     return out;
 }
+
+/**
+ * The origin FcEngine.page is served from, worked out from the host of the page
+ * that embeds it. Null when the host is neither Lightning nor Visualforce.
+ */
+export function engineOriginFor(host) {
+    const lightning = '.lightning.force.com';
+    const h = String(host || '').toLowerCase();
+    if (h.endsWith('.vf.force.com')) {
+        return 'https://' + h;
+    }
+    if (!h.endsWith(lightning)) {
+        return null;
+    }
+    const domain = h.slice(0, -lightning.length);
+    const dot = domain.indexOf('.');
+    const first = dot === -1 ? domain : domain.slice(0, dot);
+    const rest = dot === -1 ? '' : domain.slice(dot);
+    return 'https://' + first + '--c' + rest + '.vf.force.com';
+}

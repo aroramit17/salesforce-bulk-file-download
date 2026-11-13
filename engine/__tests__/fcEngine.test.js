@@ -3,7 +3,7 @@ import * as core from 'c/fcCore';
 const fflate = require('fflate');
 const fs = require('fs');
 const path = require('path');
-const { createEngine } = require('../fcEngine');
+const { createEngine, createParentLink } = require('../fcEngine');
 
 const API = '/services/data/v66.0/';
 
@@ -303,6 +303,36 @@ describe('list view ids', () => {
         const t = setup({ [API + 'sobjects/Account/listviews/00B1/describe']: 401 });
         await t.engine.handle({ fc: 1, type: 'listview', object: 'Account', listViewId: '00B1' });
         expect(t.last('fatal')).toMatchObject({ code: 'AUTH' });
+    });
+});
+
+describe('parent link', () => {
+    const LIGHTNING = 'https://acme.lightning.force.com';
+    const VF = 'https://acme--c.vf.force.com';
+
+    it('announces to every allowed origin', () => {
+        const sent = [];
+        createParentLink([LIGHTNING, VF], (m, o) => sent.push([m.type, o])).announce({ fc: 1, type: 'ready' });
+        expect(sent).toEqual([['ready', LIGHTNING], ['ready', VF]]);
+    });
+
+    it('rejects messages from an origin that is not allowed', () => {
+        const link = createParentLink([LIGHTNING, VF], () => {});
+        expect(link.accept('https://evil.example')).toBe(false);
+        expect(link.accept(LIGHTNING)).toBe(true);
+    });
+
+    it('replies only to the allowed origin that spoke', () => {
+        const sent = [];
+        const link = createParentLink([LIGHTNING, VF], (m, o) => sent.push(o));
+        link.post({ fc: 1, type: 'progress' });
+        expect(sent).toEqual([]);
+        link.accept('https://evil.example');
+        link.post({ fc: 1, type: 'progress' });
+        expect(sent).toEqual([]);
+        link.accept(VF);
+        link.post({ fc: 1, type: 'progress' });
+        expect(sent).toEqual([VF]);
     });
 });
 

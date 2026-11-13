@@ -424,4 +424,12 @@
         <shortDescription>Fc Records Found</shortDescription>
         <value>{0} records in this list view</value>
     </labels>
+    <labels>
+        <fullName>Fc_No_List_Views</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc No List Views</shortDescription>
+        <value>This object has no list views you can use. Create one in Salesforce, then come back.</value>
+    </labels>
 </CustomLabels>

@@ -267,5 +267,29 @@
         return { handle: handle };
     }
 
-    return { createEngine: createEngine };
+    // Tracks which parent window origin the engine may talk to. The engine is
+    // embedded from Lightning pages and from flow pages, which Salesforce
+    // serves on the Visualforce domain, so more than one origin is allowed.
+    function createParentLink(allowedOrigins, postFn) {
+        var parent = null;
+        return {
+            announce: function (message) {
+                allowedOrigins.forEach(function (origin) { postFn(message, origin); });
+            },
+            accept: function (origin) {
+                if (allowedOrigins.indexOf(origin) === -1) {
+                    return false;
+                }
+                parent = origin;
+                return true;
+            },
+            post: function (message) {
+                if (parent) {
+                    postFn(message, parent);
+                }
+            }
+        };
+    }
+
+    return { createEngine: createEngine, createParentLink: createParentLink };
 });
