@@ -3,7 +3,7 @@ import * as core from 'c/fcCore';
 const fflate = require('fflate');
 const fs = require('fs');
 const path = require('path');
-const { createEngine, createParentLink } = require('../fcEngine');
+const { createEngine, createParentLink, createFolderSink } = require('../fcEngine');
 
 const API = '/services/data/v66.0/';
 
@@ -73,7 +73,7 @@ const OPTIONS = {
     maxFilesPerZip: 500
 };
 
-function setup(routes, options) {
+function setup(routes, options, sink) {
     const posts = [];
     const fetchFn = fakeFetch(routes);
     const engine = createEngine({
@@ -87,7 +87,8 @@ function setup(routes, options) {
         now: () => new Date(2026, 10, 13),
         makeBlob: concat,
         retryDelayMs: 0,
-        nonce: 'n1'
+        nonce: 'n1',
+        getFolderSink: async () => sink
     });
     const run = async (rows) => {
         await engine.handle({ fc: 1, type: 'start', jobId: 'j1', options: { ...OPTIONS, ...options }, objectLabel: 'Account' });
@@ -334,6 +335,135 @@ describe('list view ids', () => {
         const t = setup({ [API + 'sobjects/Account/listviews/00B1/describe']: 401 });
         await t.engine.handle({ fc: 1, type: 'listview', object: 'Account', listViewId: '00B1' });
         expect(t.last('fatal')).toMatchObject({ code: 'AUTH' });
+    });
+});
+
+// A minimal stand-in for a FileSystemDirectoryHandle.
+function fakeDir() {
+    const dirs = {};
+    const files = {};
+    const notFound = () => Object.assign(new Error('missing'), { name: 'NotFoundError' });
+    return {
+        dirs,
+        files,
+        async getDirectoryHandle(name, opts) {
+            if (!dirs[name]) {
+                if (!opts || !opts.create) {
+                    throw notFound();
+                }
+                dirs[name] = fakeDir();
+            }
+            return dirs[name];
+        },
+        async getFileHandle(name, opts) {
+            if (!(name in files)) {
+                if (!opts || !opts.create) {
+                    throw notFound();
+                }
+                files[name] = null;
+            }
+            return {
+                async createWritable() {
+                    let data;
+                    return {
+                        async write(bytes) {
+                            data = bytes;
+                        },
+                        async close() {
+                            files[name] = fflate.strFromU8(data);
+                        }
+                    };
+                }
+            };
+        }
+    };
+}
+
+describe('folder output', () => {
+    function memorySink() {
+        const written = {};
+        return {
+            written,
+            async writeFile(path, bytes) {
+                written[path] = fflate.strFromU8(bytes);
+                return path;
+            }
+        };
+    }
+
+    it('writes every file, the manifest and no zip', async () => {
+        const rows = [fileRow('068A', 'Acme', 'a', 'txt', A), fileRow('068B', 'Globex', 'b', 'pdf', B)];
+        const sink = memorySink();
+        const t = setup({ [API + rows[0].path]: A, [API + rows[1].path]: B }, { output: 'folder' }, sink);
+        await t.run(rows);
+        expect(sink.written['Acme/Acme_a.txt']).toBe('alpha');
+        expect(sink.written['Globex/Globex_b.pdf']).toBe('bravo bravo');
+        expect(sink.written['manifest.csv']).toContain('Globex/Globex_b.pdf');
+        expect(sink.written['errors.csv']).toBeUndefined();
+        expect(t.parts()).toHaveLength(0);
+        expect(t.last('done')).toMatchObject({ ok: 2, failed: 0, folder: true, cancelled: false });
+    });
+
+    it('does not set big files aside, because there is no zip size limit', async () => {
+        const rows = [fileRow('068A', 'Acme', 'a', 'txt', A)];
+        const sink = memorySink();
+        const t = setup({ [API + rows[0].path]: A }, { output: 'folder', maxZipBytes: 1 }, sink);
+        await t.run(rows);
+        expect(sink.written['Acme/Acme_a.txt']).toBe('alpha');
+        expect(t.last('done')).toMatchObject({ ok: 1, oversized: 0 });
+    });
+
+    it('lists failures in errors.csv', async () => {
+        const rows = [fileRow('068GONE', 'Acme', 'gone', 'txt', A), fileRow('068B', 'Acme', 'b', 'txt', B)];
+        const sink = memorySink();
+        const t = setup({ [API + rows[1].path]: B }, { output: 'folder' }, sink);
+        await t.run(rows);
+        expect(sink.written['errors.csv']).toContain('068GONE');
+        expect(t.last('done')).toMatchObject({ ok: 1, failed: 1 });
+    });
+
+    it('records the name the folder actually gave the file', async () => {
+        const rows = [fileRow('068A', 'Acme', 'a', 'txt', A)];
+        const sink = { written: {}, async writeFile(path, bytes) { this.written[path] = bytes; return path === 'Acme/Acme_a.txt' ? 'Acme/Acme_a (2).txt' : path; } };
+        const t = setup({ [API + rows[0].path]: A }, { output: 'folder' }, sink);
+        await t.run(rows);
+        expect(fflate.strFromU8(sink.written['manifest.csv'])).toContain('Acme/Acme_a (2).txt');
+    });
+
+    it('reports a file that cannot be written and carries on', async () => {
+        const rows = [fileRow('068A', 'Acme', 'a', 'txt', A), fileRow('068B', 'Acme', 'b', 'txt', B)];
+        const sink = { written: {}, async writeFile(path, bytes) { if (path.endsWith('_a.txt')) { throw new Error('disk full'); } this.written[path] = fflate.strFromU8(bytes); return path; } };
+        const t = setup({ [API + rows[0].path]: A, [API + rows[1].path]: B }, { output: 'folder' }, sink);
+        await t.run(rows);
+        expect(sink.written['Acme/Acme_b.txt']).toBe('bravo bravo');
+        expect(sink.written['errors.csv']).toContain('disk full');
+    });
+});
+
+describe('folder sink', () => {
+    it('creates nested folders and writes the file', async () => {
+        const root = fakeDir();
+        const written = await createFolderSink(root).writeFile('Account/Acme/x.txt', A);
+        expect(written).toBe('Account/Acme/x.txt');
+        expect(root.dirs.Account.dirs.Acme.files['x.txt']).toBe('alpha');
+    });
+
+    it('numbers the new file instead of overwriting one that is already there', async () => {
+        const root = fakeDir();
+        const sink = createFolderSink(root);
+        await sink.writeFile('Acme/x.txt', A);
+        const second = await sink.writeFile('Acme/x.txt', B);
+        const third = await sink.writeFile('Acme/x.txt', C);
+        expect(second).toBe('Acme/x (2).txt');
+        expect(third).toBe('Acme/x (3).txt');
+        expect(root.dirs.Acme.files['x.txt']).toBe('alpha');
+        expect(root.dirs.Acme.files['x (2).txt']).toBe('bravo bravo');
+    });
+
+    it('writes files at the top level', async () => {
+        const root = fakeDir();
+        await createFolderSink(root).writeFile('manifest.csv', A);
+        expect(root.files['manifest.csv']).toBe('alpha');
     });
 });
 

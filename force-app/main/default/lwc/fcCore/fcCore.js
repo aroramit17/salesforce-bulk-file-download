@@ -85,7 +85,8 @@ export function filterRows(rows, options) {
     };
     const exts = (options.extensions || []).map((e) => String(e).toLowerCase());
     return rows.filter((row) => {
-        if (!kinds[row.kind]) {
+        // Kinds without a switch (documents, static resources, event logs) always pass.
+        if (Object.prototype.hasOwnProperty.call(kinds, row.kind) && !kinds[row.kind]) {
             return false;
         }
         if (exts.length && !exts.includes(String(row.ext || '').toLowerCase())) {

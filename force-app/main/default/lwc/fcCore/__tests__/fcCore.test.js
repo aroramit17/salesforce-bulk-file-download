@@ -152,6 +152,10 @@ describe('filterRows', () => {
         expect(filterRows(rows, { ...all, includeAttachments: false, includeNotes: false })).toHaveLength(3);
         expect(filterRows(rows, { ...all, includeFiles: false, includeEnhancedNotes: false })).toHaveLength(2);
     });
+    it('keeps kinds it has no switch for', () => {
+        const extra = [{ kind: 'Document', ext: 'pdf', size: 1, createdDate: '2026-02-01T00:00:00.000Z' }, { kind: 'EventLog', ext: 'csv', size: 1, createdDate: '2026-02-01T00:00:00.000Z' }];
+        expect(filterRows(extra, { ...all, includeFiles: false, includeAttachments: false, includeNotes: false, includeEnhancedNotes: false })).toHaveLength(2);
+    });
     it('matches extensions without regard to case', () => {
         expect(filterRows(rows, { ...all, extensions: ['png'] })).toEqual([rows[1]]);
     });

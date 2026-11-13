@@ -87,7 +87,8 @@ function filterRows(rows, options) {
     };
     const exts = (options.extensions || []).map((e) => String(e).toLowerCase());
     return rows.filter((row) => {
-        if (!kinds[row.kind]) {
+        // Kinds without a switch (documents, static resources, event logs) always pass.
+        if (Object.prototype.hasOwnProperty.call(kinds, row.kind) && !kinds[row.kind]) {
             return false;
         }
         if (exts.length && !exts.includes(String(row.ext || '').toLowerCase())) {
@@ -449,6 +450,64 @@ root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows
             send('done', { jobId: job.id, ok: ok, failed: failed, oversized: plan.oversized.length, cancelled: false });
         }
 
+        // Folder output: every file goes straight into a folder the user picked.
+        // There is no zip, so there are no parts and no size limit per file.
+        async function runFolder(job) {
+            var options = job.options;
+            var rows = job.rows;
+            var sink = await deps.getFolderSink();
+            var totalBytes = rows.reduce(function (n, r) { return n + (r.size || 0); }, 0);
+            var used = new Set(['manifest.csv', 'errors.csv']);
+            var manifest = [];
+            var errors = [];
+            var bytes = 0;
+            var next = prefetcher(rows);
+
+            for (var i = 0; i < rows.length; i++) {
+                if (job.cancelled) {
+                    break;
+                }
+                var row = rows[i];
+                var fileName = core.applyPattern(options.pattern, row);
+                send('progress', {
+                    jobId: job.id, done: i, total: rows.length, bytes: bytes, totalBytes: totalBytes,
+                    part: 1, parts: 1, current: row.parentName + ' / ' + fileName
+                });
+                var result = await next(i);
+                if (result.error instanceof AuthError) {
+                    throw result.error;
+                }
+                var reason = result.error ? String(result.error.message || result.error) : null;
+                if (!reason) {
+                    var folder = core.folderFor(options.layout, row);
+                    var path = core.uniquePath(folder ? folder + '/' + fileName : fileName, used);
+                    try {
+                        var written = await sink.writeFile(path, result.bytes);
+                        manifest.push({ row: row, fileName: fileName, zipPath: written, link: '' });
+                    } catch (e) {
+                        reason = String(e.message || e);
+                    }
+                }
+                if (reason) {
+                    errors.push({ row: row, fileName: fileName, reason: reason });
+                }
+                bytes += row.size || 0;
+            }
+
+            await sink.writeFile('manifest.csv', fflate.strToU8(core.manifestCsv(manifest)));
+            if (errors.length) {
+                await sink.writeFile('errors.csv', fflate.strToU8(core.errorsCsv(errors)));
+            }
+            send('progress', {
+                jobId: job.id, done: manifest.length + errors.length, total: rows.length, bytes: bytes,
+                totalBytes: totalBytes, part: 1, parts: 1, current: ''
+            });
+            send('done', {
+                jobId: job.id, ok: manifest.length, failed: errors.length, oversized: 0,
+                cancelled: job.cancelled, folder: true
+            });
+        }
+
         async function listViewIds(message) {
             var ids = [];
             try {
@@ -489,7 +548,7 @@ root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows
                 job.rows = job.rows.concat(message.rows || []);
                 if (message.last) {
                     try {
-                        await run(job);
+                        await (job.options.output === 'folder' ? runFolder(job) : run(job));
                     } catch (e) {
                         send('fatal', {
                             jobId: job.id, code: e instanceof AuthError ? 'AUTH' : 'UNKNOWN',
@@ -530,5 +589,45 @@ root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows
         };
     }
 
-    return { createEngine: createEngine, createParentLink: createParentLink };
+    // Wraps a FileSystemDirectoryHandle. Never overwrites: a name that is
+    // already in the folder gets " (2)", " (3)" and so on.
+    function createFolderSink(root) {
+        async function exists(dir, name) {
+            try {
+                await dir.getFileHandle(name);
+                return true;
+            } catch (e) {
+                if (e && e.name === 'NotFoundError') {
+                    return false;
+                }
+                throw e;
+            }
+        }
+        return {
+            writeFile: async function (path, bytes) {
+                var segments = path.split('/');
+                var name = segments.pop();
+                var dir = root;
+                for (var i = 0; i < segments.length; i++) {
+                    dir = await dir.getDirectoryHandle(segments[i], { create: true });
+                }
+                var dot = name.lastIndexOf('.');
+                var stem = dot > 0 ? name.slice(0, dot) : name;
+                var ext = dot > 0 ? name.slice(dot) : '';
+                var candidate = name;
+                var n = 1;
+                while (await exists(dir, candidate)) {
+                    n += 1;
+                    candidate = stem + ' (' + n + ')' + ext;
+                }
+                var handle = await dir.getFileHandle(candidate, { create: true });
+                var writable = await handle.createWritable();
+                await writable.write(bytes);
+                await writable.close();
+                return segments.concat(candidate).join('/');
+            }
+        };
+    }
+
+    return { createEngine: createEngine, createParentLink: createParentLink, createFolderSink: createFolderSink };
 });
