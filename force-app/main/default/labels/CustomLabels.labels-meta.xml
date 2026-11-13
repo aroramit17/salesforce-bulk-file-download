@@ -464,4 +464,20 @@
         <shortDescription>Fc Event Log Permission</shortDescription>
         <value>You need the View Event Log Files permission to download event logs.</value>
     </labels>
+    <labels>
+        <fullName>Fc_Related</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Related</shortDescription>
+        <value>Also include files from</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Related_Count</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Related Count</shortDescription>
+        <value>{0} ({1} records)</value>
+    </labels>
 </CustomLabels>

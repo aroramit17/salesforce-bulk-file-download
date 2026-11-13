@@ -2,9 +2,13 @@ import { createElement } from 'lwc';
 import FcCrateBuilder from 'c/fcCrateBuilder';
 import getFiles from '@salesforce/apex/FcFileQueryService.getFiles';
 import getSettings from '@salesforce/apex/FcSettingsService.getSettings';
+import getRelatedIds from '@salesforce/apex/FcSelectionService.getRelatedIds';
+import logJob from '@salesforce/apex/FcJobService.logJob';
 
 jest.mock('@salesforce/apex/FcFileQueryService.getFiles', () => ({ default: jest.fn() }), { virtual: true });
 jest.mock('@salesforce/apex/FcSettingsService.getSettings', () => ({ default: jest.fn() }), { virtual: true });
+jest.mock('@salesforce/apex/FcSelectionService.getRelatedIds', () => ({ default: jest.fn() }), { virtual: true });
+jest.mock('@salesforce/apex/FcJobService.logJob', () => ({ default: jest.fn() }), { virtual: true });
 
 const SETTINGS = {
     maxFilesPerZip: 500,
@@ -69,6 +73,8 @@ describe('c-fc-crate-builder', () => {
     beforeEach(() => {
         getSettings.mockResolvedValue(SETTINGS);
         getFiles.mockResolvedValue([row('1', 'File', 1048576), row('2', 'File', 524288), row('3', 'Attachment', 1024)]);
+        getRelatedIds.mockResolvedValue({ byPath: {}, errors: [] });
+        logJob.mockResolvedValue('a00');
     });
 
     afterEach(() => {
@@ -259,5 +265,122 @@ describe('c-fc-crate-builder', () => {
         await flush();
         expect(getSettings).toHaveBeenCalledTimes(2);
         expect(q(el, 'count').textContent).toBe('3');
+    });
+
+    describe('related records', () => {
+        beforeEach(() => {
+            getRelatedIds.mockResolvedValue({ byPath: { Contacts: ['003A', '003B'], 'Contacts.Cases': [] }, errors: ['Nope: no relationship named Nope on Account.'] });
+        });
+
+        it('offers each configured path with its record count', async () => {
+            const el = await mount({ recordIds: ['001A'], relatedPaths: 'Contacts, Contacts.Cases, Nope' });
+            expect(getRelatedIds).toHaveBeenCalledWith({ recordId: '001A', paths: ['Contacts', 'Contacts.Cases', 'Nope'] });
+            const boxes = el.shadowRoot.querySelectorAll('[data-related]');
+            expect(Array.from(boxes).map((b) => b.dataset.related)).toEqual(['Contacts', 'Contacts.Cases']);
+            expect(boxes[0].checked).toBe(false);
+            expect(q(el, 'related-errors').textContent).toContain('Nope');
+        });
+
+        it('adds the related records when a path is ticked and drops them when unticked', async () => {
+            const el = await mount({ recordIds: ['001A'], relatedPaths: 'Contacts' });
+            const box = el.shadowRoot.querySelector('[data-related="Contacts"]');
+            box.checked = true;
+            box.dispatchEvent(new CustomEvent('change'));
+            await flush();
+            expect(getFiles).toHaveBeenLastCalledWith({ recordIds: ['001A', '003A', '003B'], latestOnly: true });
+            const again = el.shadowRoot.querySelector('[data-related="Contacts"]');
+            again.checked = false;
+            again.dispatchEvent(new CustomEvent('change'));
+            await flush();
+            expect(getFiles).toHaveBeenLastCalledWith({ recordIds: ['001A'], latestOnly: true });
+        });
+
+        it('asks for nothing when no paths are configured', async () => {
+            await mount({ recordIds: ['001A'] });
+            expect(getRelatedIds).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('several list views', () => {
+        it('resolves each list view in turn and merges the record ids', async () => {
+            const el = await mount({
+                listViews: [
+                    { objectApiName: 'Account', listViewId: '00B1' },
+                    { objectApiName: 'Case', listViewId: '00B2' }
+                ]
+            });
+            const frame = el.shadowRoot.querySelector('iframe');
+            const post = jest.spyOn(frame.contentWindow, 'postMessage').mockImplementation(() => {});
+            fromEngine(el, { type: 'ready' });
+            await flush();
+            expect(post.mock.calls[0][0]).toMatchObject({ type: 'listview', object: 'Account', listViewId: '00B1' });
+            fromEngine(el, { type: 'ids', requestId: post.mock.calls[0][0].requestId, ids: ['001A', '001B'] });
+            await flush();
+            expect(post.mock.calls[1][0]).toMatchObject({ type: 'listview', object: 'Case', listViewId: '00B2' });
+            expect(getFiles).not.toHaveBeenCalled();
+            fromEngine(el, { type: 'ids', requestId: post.mock.calls[1][0].requestId, ids: ['500A', '001A'] });
+            await flush();
+            expect(getFiles).toHaveBeenCalledWith({ recordIds: ['001A', '001B', '500A'], latestOnly: true });
+        });
+    });
+
+    describe('preset rows', () => {
+        it('shows rows it was handed without asking the server', async () => {
+            const el = await mount({ presetRows: [row('9', 'Document', 2048), row('10', 'StaticResource', 2048)], presetLabel: 'Documents' });
+            expect(getFiles).not.toHaveBeenCalled();
+            expect(q(el, 'count').textContent).toBe('2');
+            expect(el.shadowRoot.querySelector('[data-option="latestOnly"]')).toBeNull();
+            expect(q(el, 'no-records')).toBeNull();
+        });
+
+        it('names the zip after the preset label', async () => {
+            const el = await mount({ presetRows: [row('9', 'Document', 2048)], presetLabel: 'Documents' });
+            const frame = el.shadowRoot.querySelector('iframe');
+            const post = jest.spyOn(frame.contentWindow, 'postMessage').mockImplementation(() => {});
+            fromEngine(el, { type: 'ready' });
+            await flush();
+            q(el, 'download').click();
+            await flush();
+            expect(post.mock.calls[0][0]).toMatchObject({ type: 'start', objectLabel: 'Documents' });
+        });
+    });
+
+    describe('job history', () => {
+        async function finish(el, done) {
+            const frame = el.shadowRoot.querySelector('iframe');
+            const post = jest.spyOn(frame.contentWindow, 'postMessage').mockImplementation(() => {});
+            fromEngine(el, { type: 'ready' });
+            await flush();
+            q(el, 'download').click();
+            await flush();
+            fromEngine(el, { type: 'done', jobId: post.mock.calls[0][0].jobId, ok: 3, failed: 0, oversized: 0, cancelled: false, ...done });
+            await flush();
+        }
+
+        it('logs a finished run with its counts and the request for a re-run', async () => {
+            const el = await mount({ recordIds: ['001A'], objectApiName: 'Account', request: { mode: 'search', objectApiName: 'Account', recordIds: ['001A'] } });
+            await finish(el, {});
+            expect(logJob).toHaveBeenCalledTimes(1);
+            const job = logJob.mock.calls[0][0].job;
+            expect(job).toMatchObject({ status: 'Done', sourceType: 'search', objectApiName: 'Account', destination: 'Browser', recordCount: 1, fileCount: 3, totalBytes: 1573888 });
+            expect(JSON.parse(job.request)).toMatchObject({ mode: 'search', recordIds: ['001A'], options: { layout: 'PerRecord' } });
+        });
+
+        it('marks a run with failures as partial and a cancelled run as cancelled', async () => {
+            const el = await mount({ recordIds: ['001A'] });
+            await finish(el, { ok: 2, failed: 1 });
+            expect(logJob.mock.calls[0][0].job).toMatchObject({ status: 'Partial', fileCount: 2, sourceType: 'records' });
+            const el2 = await mount({ recordIds: ['001A'] });
+            await finish(el2, { cancelled: true });
+            expect(logJob.mock.calls[1][0].job.status).toBe('Cancelled');
+        });
+
+        it('still shows the result when logging fails', async () => {
+            logJob.mockRejectedValue(new Error('no access'));
+            const el = await mount({ recordIds: ['001A'] });
+            await finish(el, {});
+            expect(q(el, 'done')).not.toBeNull();
+            expect(q(el, 'error')).toBeNull();
+        });
     });
 });

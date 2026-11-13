@@ -1,6 +1,8 @@
 import { LightningElement, api } from 'lwc';
 import getFiles from '@salesforce/apex/FcFileQueryService.getFiles';
 import getSettings from '@salesforce/apex/FcSettingsService.getSettings';
+import getRelatedIds from '@salesforce/apex/FcSelectionService.getRelatedIds';
+import logJob from '@salesforce/apex/FcJobService.logJob';
 import { filterRows, planParts, formatBytes, chunk, applyPattern, engineOriginFor } from 'c/fcCore';
 import { LABELS, fmt } from 'c/fcLabels';
 
@@ -9,6 +11,7 @@ const CALLS_IN_FLIGHT = 3;
 const ROWS_PER_MESSAGE = 500;
 const MB = 1024 * 1024;
 const ENGINE_START_TIMEOUT_MS = 15000;
+const MAX_IDS_IN_REQUEST = 2000;
 
 function makeNonce() {
     const bytes = new Uint8Array(16);
@@ -48,6 +51,12 @@ function errorText(e) {
 export default class FcCrateBuilder extends LightningElement {
     @api objectApiName;
     @api compact = false;
+    /** Comma separated child relationship paths offered in record mode, e.g. "Contacts, Opportunities.OpportunityLineItems". */
+    @api relatedPaths;
+    /** Name used for the zip when the rows were handed in through presetRows. */
+    @api presetLabel;
+    /** What to store in the job history so the run can be repeated. */
+    @api request;
 
     labels = LABELS;
     // Each builder gets its own engine frame; the nonce ties the frame's messages to this builder.
@@ -62,6 +71,8 @@ export default class FcCrateBuilder extends LightningElement {
     optionsOpen = false;
     rows = [];
     recordCount = null;
+    related = [];
+    relatedErrors = [];
     engineReady = false;
     progress = { done: 0, total: 0, bytes: 0, totalBytes: 0, current: '' };
     savedParts = [];
@@ -69,11 +80,16 @@ export default class FcCrateBuilder extends LightningElement {
 
     _recordIds = [];
     _listViewId = null;
+    _listViews = null;
+    _presetRows = null;
+    _pendingSources = [];
+    _collectedIds = [];
     _currentIds = [];
     _connected = false;
     _engineOrigin = null;
     _loadToken = 0;
     _jobId = null;
+    _runBytes = 0;
     _listRequest = 0;
     _engineTimer = null;
     _onMessage = (event) => this.handleMessage(event);
@@ -95,6 +111,30 @@ export default class FcCrateBuilder extends LightningElement {
     }
     set listViewId(value) {
         this._listViewId = value || null;
+        if (this._connected && this.options) {
+            this.reload();
+        }
+    }
+
+    /** Several list views at once: [{ objectApiName, listViewId }]. */
+    @api
+    get listViews() {
+        return this._listViews;
+    }
+    set listViews(value) {
+        this._listViews = Array.isArray(value) && value.length ? value : null;
+        if (this._connected && this.options) {
+            this.reload();
+        }
+    }
+
+    /** File rows loaded by the host (documents, libraries, static resources, event logs). */
+    @api
+    get presetRows() {
+        return this._presetRows;
+    }
+    set presetRows(value) {
+        this._presetRows = Array.isArray(value) ? value : null;
         if (this._connected && this.options) {
             this.reload();
         }
@@ -145,29 +185,85 @@ export default class FcCrateBuilder extends LightningElement {
         }
     }
 
+    /** The list views to resolve into record Ids. */
+    get sources() {
+        if (this._listViews) {
+            return this._listViews;
+        }
+        return this._listViewId ? [{ objectApiName: this.objectApiName, listViewId: this._listViewId }] : [];
+    }
+
     reload() {
         this.errorMessage = null;
         this.recordCount = null;
-        if (this._listViewId) {
+        this.related = [];
+        this.relatedErrors = [];
+        if (this._presetRows) {
+            this._loadToken += 1;
+            this._currentIds = [];
+            this.rows = this._presetRows;
+            this.phase = 'ready';
+        } else if (this.sources.length) {
             this.phase = 'loading';
             this._loadToken += 1;
+            this._pendingSources = this.sources.slice();
+            this._collectedIds = [];
             this.requestListView();
         } else {
             this._currentIds = this._recordIds;
             this.loadRows();
+            this.loadRelated();
         }
     }
 
     requestListView() {
-        if (this.engineReady && this._listViewId) {
+        if (this.engineReady && this._pendingSources.length) {
+            const source = this._pendingSources[0];
             this._listRequest += 1;
             this.postToEngine({
                 type: 'listview',
                 requestId: 'r' + this._listRequest,
-                object: this.objectApiName,
-                listViewId: this._listViewId
+                object: source.objectApiName,
+                listViewId: source.listViewId
             });
         }
+    }
+
+    async loadRelated() {
+        const paths = String(this.relatedPaths || '')
+            .split(',')
+            .map((p) => p.trim())
+            .filter(Boolean);
+        if (!paths.length || this._recordIds.length !== 1) {
+            return;
+        }
+        const recordId = this._recordIds[0];
+        try {
+            const result = await getRelatedIds({ recordId, paths });
+            if (this._recordIds[0] !== recordId) {
+                return;
+            }
+            const byPath = result.byPath || {};
+            this.related = Object.keys(byPath).map((path) => ({
+                path,
+                ids: byPath[path],
+                checked: false,
+                label: fmt(this.labels.Related_Count, path, byPath[path].length)
+            }));
+            this.relatedErrors = result.errors || [];
+        } catch (e) {
+            this.relatedErrors = [errorText(e)];
+        }
+    }
+
+    handleRelated(event) {
+        const path = event.target.dataset.related;
+        const checked = event.target.checked;
+        this.related = this.related.map((r) => (r.path === path ? { ...r, checked } : r));
+        const ids = this._recordIds.slice();
+        this.related.filter((r) => r.checked).forEach((r) => ids.push(...r.ids));
+        this._currentIds = Array.from(new Set(ids));
+        this.loadRows();
     }
 
     async loadRows() {
@@ -240,7 +336,7 @@ export default class FcCrateBuilder extends LightningElement {
             this._engineOrigin = event.origin;
             this.engineReady = true;
             clearTimeout(this._engineTimer);
-            if (this._listViewId && this.phase === 'loading') {
+            if (this.phase === 'loading') {
                 this.requestListView();
             }
         } else if (data.type === 'ids') {
@@ -250,9 +346,15 @@ export default class FcCrateBuilder extends LightningElement {
             if (data.error) {
                 this.fail(data.error);
             } else {
-                this._currentIds = data.ids || [];
-                this.recordCount = this._currentIds.length;
-                this.loadRows();
+                this._collectedIds = this._collectedIds.concat(data.ids || []);
+                this._pendingSources = this._pendingSources.slice(1);
+                if (this._pendingSources.length) {
+                    this.requestListView();
+                } else {
+                    this._currentIds = Array.from(new Set(this._collectedIds));
+                    this.recordCount = this._currentIds.length;
+                    this.loadRows();
+                }
             }
         } else if (data.type === 'fatal') {
             this._jobId = null;
@@ -272,7 +374,40 @@ export default class FcCrateBuilder extends LightningElement {
             this._jobId = null;
             this.result = data;
             this.phase = 'done';
+            this.logRun(data);
         }
+    }
+
+    /** Records the run in the job history. A logging problem never gets in the way of the download. */
+    logRun(result) {
+        const request = this.request || {
+            mode: 'records',
+            objectApiName: this.objectApiName,
+            recordIds: this._currentIds.slice(0, MAX_IDS_IN_REQUEST)
+        };
+        const options = { ...this.options };
+        delete options.maxZipBytes;
+        delete options.maxFilesPerZip;
+        let status = 'Done';
+        if (result.cancelled) {
+            status = 'Cancelled';
+        } else if (result.failed) {
+            status = 'Partial';
+        }
+        const job = {
+            status,
+            sourceType: request.mode,
+            objectApiName: request.objectApiName || this.objectApiName || null,
+            destination: result.folder ? 'Folder' : 'Browser',
+            recordCount: this._presetRows ? null : this._currentIds.length,
+            fileCount: result.ok,
+            totalBytes: this._runBytes,
+            request: JSON.stringify({ ...request, options }),
+            error: null
+        };
+        Promise.resolve()
+            .then(() => logJob({ job }))
+            .catch(() => {});
     }
 
     saveBlob(name, blob) {
@@ -331,11 +466,12 @@ export default class FcCrateBuilder extends LightningElement {
         this.savedParts = [];
         this.result = null;
         this.progress = { done: 0, total: rows.length, bytes: 0, totalBytes: this.totalBytes, current: '' };
+        this._runBytes = this.totalBytes;
         this.phase = 'running';
         this.postToEngine({
             type: 'start',
             jobId: this._jobId,
-            objectLabel: this.objectApiName || rows[0].parentObject,
+            objectLabel: this.presetLabel || this.objectApiName || (this._listViews ? 'Files' : rows[0].parentObject),
             options: {
                 layout: this.options.layout,
                 pattern: this.options.pattern || '',
@@ -389,7 +525,16 @@ export default class FcCrateBuilder extends LightningElement {
         return this.phase === 'done';
     }
     get noRecords() {
-        return this.phase === 'ready' && !this._listViewId && !this._currentIds.length;
+        return this.phase === 'ready' && !this._presetRows && !this.sources.length && !this._currentIds.length;
+    }
+    get showLatest() {
+        return !this._presetRows;
+    }
+    get hasRelated() {
+        return this.related.length > 0;
+    }
+    get relatedErrorText() {
+        return this.relatedErrors.length ? this.relatedErrors.join(' ') : null;
     }
     get showOptions() {
         return !this.compact || this.optionsOpen;

@@ -91,8 +91,10 @@
                         <lightning-input class="slds-m-bottom_xx-small" type="text" label={labels.Pattern} value={options.pattern}
                             data-option="pattern" onchange={handleValue} field-level-help={labels.Pattern_Help}></lightning-input>
                         <p class="slds-text-color_weak slds-m-bottom_small fc-mono" data-id="example">{exampleName}</p>
-                        <lightning-input type="checkbox" label={labels.Latest_Only} checked={options.latestOnly}
-                            data-option="latestOnly" onchange={handleLatest}></lightning-input>
+                        <template lwc:if={showLatest}>
+                            <lightning-input type="checkbox" label={labels.Latest_Only} checked={options.latestOnly}
+                                data-option="latestOnly" onchange={handleLatest}></lightning-input>
+                        </template>
                     </div>
                 </template>
 
@@ -119,6 +121,18 @@
                                 </li>
                             </template>
                         </ul>
+                        <template lwc:if={hasRelated}>
+                            <fieldset class="slds-form-element slds-m-bottom_small" data-id="related">
+                                <legend class="slds-form-element__legend slds-form-element__label">{labels.Related}</legend>
+                                <template for:each={related} for:item="rel">
+                                    <lightning-input key={rel.path} type="checkbox" label={rel.label} checked={rel.checked}
+                                        data-related={rel.path} onchange={handleRelated}></lightning-input>
+                                </template>
+                            </fieldset>
+                        </template>
+                        <template lwc:if={relatedErrorText}>
+                            <p class="slds-text-color_error slds-m-bottom_small" data-id="related-errors">{relatedErrorText}</p>
+                        </template>
                         <template lwc:if={noFiles}>
                             <p class="slds-m-bottom_small" data-id="no-files"><strong>{labels.No_Files}</strong></p>
                         </template>
