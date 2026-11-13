@@ -1,0 +1,22 @@
+.fc-engine {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border: 0;
+    visibility: hidden;
+}
+.fc-big {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.fc-preview {
+    background: var(--slds-g-color-neutral-base-95, #f3f3f3);
+    border: 1px solid var(--slds-g-color-border-base-1, #c9c9c9);
+    border-radius: 0.5rem;
+}
+.fc-mono {
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 0.8125rem;
+    overflow-wrap: anywhere;
+}

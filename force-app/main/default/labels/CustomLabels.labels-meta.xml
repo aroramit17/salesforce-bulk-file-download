@@ -1,0 +1,427 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
+    <labels>
+        <fullName>Fc_Title</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Title</shortDescription>
+        <value>Download Files</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Loading</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Loading</shortDescription>
+        <value>Finding files...</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Engine_Wait</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Engine Wait</shortDescription>
+        <value>Starting the download engine...</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Include</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Include</shortDescription>
+        <value>Include</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Files</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Files</shortDescription>
+        <value>Files</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Attachments</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Attachments</shortDescription>
+        <value>Attachments</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Notes</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Notes</shortDescription>
+        <value>Notes</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Enhanced_Notes</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Enhanced Notes</shortDescription>
+        <value>Enhanced Notes</value>
+    </labels>
+    <labels>
+        <fullName>Fc_File_Types</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc File Types</shortDescription>
+        <value>File types</value>
+    </labels>
+    <labels>
+        <fullName>Fc_All_Types</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc All Types</shortDescription>
+        <value>All types</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Type_Pdf</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Type Pdf</shortDescription>
+        <value>PDF only</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Type_Images</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Type Images</shortDescription>
+        <value>Images</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Type_Office</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Type Office</shortDescription>
+        <value>Office documents</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Size_Cap</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Size Cap</shortDescription>
+        <value>Skip files larger than</value>
+    </labels>
+    <labels>
+        <fullName>Fc_No_Limit</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc No Limit</shortDescription>
+        <value>No limit</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Created_From</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Created From</shortDescription>
+        <value>Created from</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Created_To</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Created To</shortDescription>
+        <value>Created to</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Layout</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Layout</shortDescription>
+        <value>Folder layout</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Layout_Record</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Layout Record</shortDescription>
+        <value>One folder per record</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Layout_Object</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Layout Object</shortDescription>
+        <value>Object, then record</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Layout_Flat</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Layout Flat</shortDescription>
+        <value>Flat, no folders</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Pattern</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Pattern</shortDescription>
+        <value>File name pattern</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Pattern_Help</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Pattern Help</shortDescription>
+        <value>Tokens: {RecordName} {Title} {ext} {RecordId} {FileId} {Object} {CreatedDate} {Version}</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Latest_Only</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Latest Only</shortDescription>
+        <value>Latest version only</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Preview</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Preview</shortDescription>
+        <value>Preview</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Count_Files</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Count Files</shortDescription>
+        <value>files</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Total_Size</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Total Size</shortDescription>
+        <value>total size</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Parts_Notice</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Parts Notice</shortDescription>
+        <value>This will save as {0} zip files. Each one gets its own manifest.csv.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Oversized_Notice</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Oversized Notice</shortDescription>
+        <value>{0} file(s) are larger than the zip size limit. They will be listed in manifest.csv with a link instead.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Access_Note</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Access Note</shortDescription>
+        <value>Only files you can already open in Salesforce are counted.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_No_Files</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc No Files</shortDescription>
+        <value>No files match on the selected records.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_No_Records</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc No Records</shortDescription>
+        <value>No records selected.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Download</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Download</shortDescription>
+        <value>Download {0} files</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Cancel</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Cancel</shortDescription>
+        <value>Cancel download</value>
+    </labels>
+    <labels>
+        <fullName>Fc_More_Options</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc More Options</shortDescription>
+        <value>More options</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Fewer_Options</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Fewer Options</shortDescription>
+        <value>Hide options</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Building</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Building</shortDescription>
+        <value>Building your download</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Keep_Open</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Keep Open</shortDescription>
+        <value>Keep this tab open until it finishes.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Progress</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Progress</shortDescription>
+        <value>{0} of {1} files</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Progress_Bytes</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Progress Bytes</shortDescription>
+        <value>{0} of {1}</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Saved</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Saved</shortDescription>
+        <value>Saved</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Done</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Done</shortDescription>
+        <value>Done. {0} files saved.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Done_Failed</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Done Failed</shortDescription>
+        <value>{0} file(s) could not be fetched. See errors.csv in the last zip.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Cancelled</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Cancelled</shortDescription>
+        <value>Download cancelled.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Auth_Error</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Auth Error</shortDescription>
+        <value>FileCrate could not read files through the Salesforce API. Your session may have expired, or your user may be missing the "API Enabled" permission. Refresh the page and try again, or ask your admin.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Error</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Error</shortDescription>
+        <value>Something went wrong.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Start_Over</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Start Over</shortDescription>
+        <value>Start another download</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Object</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Object</shortDescription>
+        <value>Object</value>
+    </labels>
+    <labels>
+        <fullName>Fc_List_View</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc List View</shortDescription>
+        <value>List view</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Pick_Object</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Pick Object</shortDescription>
+        <value>Choose an object</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Pick_List_View</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Pick List View</shortDescription>
+        <value>Choose a list view</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Tab_Intro</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Tab Intro</shortDescription>
+        <value>Pick an object and a list view. FileCrate will collect the files on every record in that view.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Records_Found</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Records Found</shortDescription>
+        <value>{0} records in this list view</value>
+    </labels>
+</CustomLabels>

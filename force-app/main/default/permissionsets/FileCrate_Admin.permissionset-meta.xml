@@ -20,6 +20,10 @@
         <enabled>true</enabled>
         <name>Fc_Run_SOQL</name>
     </customPermissions>
+    <pageAccesses>
+        <apexPage>FcEngine</apexPage>
+        <enabled>true</enabled>
+    </pageAccesses>
     <description>Everything in FileCrate User plus admin features.</description>
     <hasActivationRequired>false</hasActivationRequired>
     <label>FileCrate Admin</label>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <isExposed>true</isExposed>
+    <masterLabel>FileCrate Builder</masterLabel>
+    <description>Pick options, preview the size and download the files on a set of records as a zip.</description>
+    <targets>
+        <target>lightning__FlowScreen</target>
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__FlowScreen">
+            <property name="recordIds" type="String[]" label="Record Ids" role="inputOnly"
+                      description="Ids of the records whose files should be downloaded."/>
+            <property name="objectApiName" type="String" label="Object API Name" role="inputOnly"
+                      description="Optional. Used in the zip file name."/>
+        </targetConfig>
+    </targetConfigs>
+</LightningComponentBundle>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ApexPage xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>66.0</apiVersion>
+    <availableInTouch>false</availableInTouch>
+    <confirmationTokenRequired>false</confirmationTokenRequired>
+    <description>Zip engine for FileCrate. Embedded by the fcCrateBuilder component; not meant to be opened directly.</description>
+    <label>FcEngine</label>
+</ApexPage>

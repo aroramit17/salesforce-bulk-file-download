@@ -1,0 +1,148 @@
+<template>
+    <div class="slds-is-relative">
+        <!-- The engine page fetches file bytes and builds the zip. It stays mounted in every state. -->
+        <iframe src={engineUrl} title="FileCrate engine" class="fc-engine" aria-hidden="true" tabindex="-1"></iframe>
+
+        <template lwc:if={errorMessage}>
+            <div class="slds-box slds-theme_error slds-m-bottom_small" role="alert" data-id="error">{errorMessage}</div>
+            <lightning-button label={labels.Start_Over} onclick={handleStartOver} data-id="start-over"></lightning-button>
+        </template>
+
+        <template lwc:elseif={isLoading}>
+            <div class="slds-p-around_medium slds-text-align_center" role="status" data-id="loading">
+                <lightning-spinner alternative-text={labels.Loading} size="small" class="slds-is-relative slds-m-bottom_small"></lightning-spinner>
+                <p class="slds-m-top_large">{labels.Loading}</p>
+            </div>
+        </template>
+
+        <template lwc:elseif={noRecords}>
+            <p class="slds-p-around_medium" data-id="no-records">{labels.No_Records}</p>
+        </template>
+
+        <template lwc:elseif={isRunning}>
+            <div class="slds-p-around_small" data-id="progress">
+                <h2 class="slds-text-heading_small slds-m-bottom_xx-small">{labels.Building}</h2>
+                <p class="slds-text-color_weak slds-m-bottom_small">{labels.Keep_Open}</p>
+                <div class="slds-grid slds-grid_align-spread slds-wrap slds-m-bottom_xx-small">
+                    <strong data-id="progress-files">{progressFilesText}</strong>
+                    <span>{progressBytesText}</span>
+                </div>
+                <lightning-progress-bar value={progressPercent} size="large"></lightning-progress-bar>
+                <p class="slds-m-top_small slds-truncate slds-text-color_weak" title={progress.current}>{progress.current}</p>
+                <ul class="slds-m-top_small">
+                    <template for:each={savedParts} for:item="part">
+                        <li key={part.name} class="slds-box slds-box_x-small slds-m-bottom_xx-small slds-grid slds-grid_align-spread slds-wrap">
+                            <span class="fc-mono">{part.name}</span>
+                            <strong class="slds-text-color_success">{labels.Saved} · {part.sizeText}</strong>
+                        </li>
+                    </template>
+                </ul>
+                <lightning-button label={labels.Cancel} onclick={handleCancel} class="slds-m-top_small" data-id="cancel"></lightning-button>
+            </div>
+        </template>
+
+        <template lwc:elseif={isDone}>
+            <div class="slds-p-around_small" data-id="done">
+                <h2 class="slds-text-heading_small slds-m-bottom_small" data-id="done-text">{doneText}</h2>
+                <template lwc:if={doneWarning}>
+                    <div class="slds-box slds-theme_warning slds-m-bottom_small" data-id="done-warning">{doneWarning}</div>
+                </template>
+                <ul>
+                    <template for:each={savedParts} for:item="part">
+                        <li key={part.name} class="slds-box slds-box_x-small slds-m-bottom_xx-small slds-grid slds-grid_align-spread slds-wrap">
+                            <span class="fc-mono">{part.name}</span>
+                            <strong class="slds-text-color_success">{labels.Saved} · {part.sizeText}</strong>
+                        </li>
+                    </template>
+                </ul>
+                <lightning-button label={labels.Start_Over} onclick={handleStartOver} class="slds-m-top_small" data-id="start-over"></lightning-button>
+            </div>
+        </template>
+
+        <template lwc:else>
+            <div class="slds-grid slds-wrap slds-gutters_small">
+                <template lwc:if={showOptions}>
+                    <div class="slds-col slds-size_1-of-1 slds-large-size_7-of-12 slds-m-bottom_small" data-id="options">
+                        <fieldset class="slds-form-element slds-m-bottom_small">
+                            <legend class="slds-form-element__legend slds-form-element__label">{labels.Include}</legend>
+                            <div class="slds-grid slds-wrap slds-gutters_small">
+                                <lightning-input class="slds-col" type="checkbox" label={labels.Files} checked={options.includeFiles}
+                                    data-option="includeFiles" onchange={handleCheck}></lightning-input>
+                                <lightning-input class="slds-col" type="checkbox" label={labels.Attachments} checked={options.includeAttachments}
+                                    data-option="includeAttachments" onchange={handleCheck}></lightning-input>
+                                <lightning-input class="slds-col" type="checkbox" label={labels.Notes} checked={options.includeNotes}
+                                    data-option="includeNotes" onchange={handleCheck}></lightning-input>
+                                <lightning-input class="slds-col" type="checkbox" label={labels.Enhanced_Notes} checked={options.includeEnhancedNotes}
+                                    data-option="includeEnhancedNotes" onchange={handleCheck}></lightning-input>
+                            </div>
+                        </fieldset>
+                        <div class="slds-grid slds-wrap slds-gutters_small">
+                            <lightning-combobox class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-m-bottom_small" label={labels.File_Types}
+                                value={typeChoice} options={typeOptions} data-option="typeChoice" onchange={handleType}></lightning-combobox>
+                            <lightning-combobox class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-m-bottom_small" label={labels.Size_Cap}
+                                value={sizeChoice} options={sizeOptions} data-option="maxSizeBytes" onchange={handleSize}></lightning-combobox>
+                            <lightning-input class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-m-bottom_small" type="date" label={labels.Created_From}
+                                value={options.createdFrom} data-option="createdFrom" onchange={handleValue}></lightning-input>
+                            <lightning-input class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-m-bottom_small" type="date" label={labels.Created_To}
+                                value={options.createdTo} data-option="createdTo" onchange={handleValue}></lightning-input>
+                        </div>
+                        <lightning-radio-group class="slds-m-bottom_small" label={labels.Layout} options={layoutOptions} value={options.layout}
+                            data-option="layout" onchange={handleValue}></lightning-radio-group>
+                        <lightning-input class="slds-m-bottom_xx-small" type="text" label={labels.Pattern} value={options.pattern}
+                            data-option="pattern" onchange={handleValue} field-level-help={labels.Pattern_Help}></lightning-input>
+                        <p class="slds-text-color_weak slds-m-bottom_small fc-mono" data-id="example">{exampleName}</p>
+                        <lightning-input type="checkbox" label={labels.Latest_Only} checked={options.latestOnly}
+                            data-option="latestOnly" onchange={handleLatest}></lightning-input>
+                    </div>
+                </template>
+
+                <div class={previewColumnClass}>
+                    <div class="fc-preview slds-p-around_medium">
+                        <h2 class="slds-text-title_bold slds-m-bottom_small">{labels.Preview}</h2>
+                        <div class="slds-grid slds-gutters_large slds-m-bottom_small">
+                            <div class="slds-col slds-grow-none">
+                                <div class="fc-big" data-id="count">{fileCount}</div>
+                                <div class="slds-text-color_weak">{labels.Count_Files}</div>
+                            </div>
+                            <div class="slds-col slds-grow-none">
+                                <div class="fc-big" data-id="size">{totalSizeText}</div>
+                                <div class="slds-text-color_weak">{labels.Total_Size}</div>
+                            </div>
+                        </div>
+                        <template lwc:if={recordCountText}>
+                            <p class="slds-m-bottom_small" data-id="record-count">{recordCountText}</p>
+                        </template>
+                        <ul class="slds-m-bottom_small">
+                            <template for:each={kindCounts} for:item="kind">
+                                <li key={kind.label} class="slds-grid slds-grid_align-spread">
+                                    <span>{kind.label}</span><span>{kind.count}</span>
+                                </li>
+                            </template>
+                        </ul>
+                        <template lwc:if={noFiles}>
+                            <p class="slds-m-bottom_small" data-id="no-files"><strong>{labels.No_Files}</strong></p>
+                        </template>
+                        <template lwc:if={partsNotice}>
+                            <p class="slds-box slds-box_x-small slds-theme_default slds-m-bottom_small" data-id="parts-notice">{partsNotice}</p>
+                        </template>
+                        <template lwc:if={oversizedNotice}>
+                            <p class="slds-box slds-box_x-small slds-theme_default slds-m-bottom_small" data-id="oversized-notice">{oversizedNotice}</p>
+                        </template>
+                        <p class="slds-text-color_weak slds-m-bottom_small">{labels.Access_Note}</p>
+                        <div class="slds-grid slds-wrap slds-grid_vertical-align-center">
+                            <lightning-button variant="brand" label={downloadLabel} disabled={downloadDisabled} onclick={handleDownload}
+                                class="slds-m-right_small slds-m-bottom_xx-small" data-id="download"></lightning-button>
+                            <template lwc:if={compact}>
+                                <lightning-button variant="base" label={optionsToggleLabel} onclick={handleToggleOptions}
+                                    class="slds-m-bottom_xx-small" data-id="toggle-options"></lightning-button>
+                            </template>
+                        </div>
+                        <template lwc:if={engineWaiting}>
+                            <p class="slds-text-color_weak slds-m-top_x-small" data-id="engine-wait">{labels.Engine_Wait}</p>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>

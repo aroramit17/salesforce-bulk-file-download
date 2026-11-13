@@ -16,6 +16,10 @@
         <apexClass>FcSettingsService</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <pageAccesses>
+        <apexPage>FcEngine</apexPage>
+        <enabled>true</enabled>
+    </pageAccesses>
     <description>Download files in bulk with FileCrate.</description>
     <hasActivationRequired>false</hasActivationRequired>
     <label>FileCrate User</label>
