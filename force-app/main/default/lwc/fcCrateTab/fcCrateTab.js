@@ -10,7 +10,7 @@ import getLibraries from '@salesforce/apex/FcOrgFileService.getLibraries';
 import getLibraryFiles from '@salesforce/apex/FcOrgFileService.getLibraryFiles';
 import getStaticResources from '@salesforce/apex/FcOrgFileService.getStaticResources';
 import getEventLogFiles from '@salesforce/apex/FcOrgFileService.getEventLogFiles';
-import { LABELS } from 'c/fcLabels';
+import { LABELS, fmt } from 'c/fcLabels';
 
 const ALL_FOLDERS = 'all';
 const ORG_LABELS = { documents: 'Documents', library: 'Library', staticresources: 'StaticResources', eventlogs: 'EventLogs' };
@@ -43,6 +43,7 @@ export default class FcCrateTab extends LightningElement {
     searchObject = null;
     searchTerm = '';
     searchResults = null;
+    searchTruncated = null;
     selectedIds = [];
     searchRequest = null;
     searchColumns = [{ label: LABELS.Name, fieldName: 'name' }];
@@ -200,8 +201,15 @@ export default class FcCrateTab extends LightningElement {
         const objectApiName = this.searchObject;
         const term = this.searchTerm;
         this.selectedIds = [];
+        this.searchedTerm = term;
+        this.searchTruncated = null;
         this.load(async () => {
-            this.searchResults = await searchRecords({ objectApiName, term });
+            const result = await searchRecords({ objectApiName, term });
+            if (this.searchObject !== objectApiName) {
+                return; // the user has moved to another object since
+            }
+            this.searchResults = result.records || [];
+            this.searchTruncated = result.truncated ? fmt(this.labels.Search_Truncated, this.searchResults.length) : null;
         });
     }
 
@@ -210,7 +218,7 @@ export default class FcCrateTab extends LightningElement {
         this.searchRequest = {
             mode: 'search',
             objectApiName: this.searchObject,
-            term: this.searchTerm,
+            term: this.searchedTerm,
             recordIds: this.selectedIds
         };
     }
@@ -292,6 +300,7 @@ export default class FcCrateTab extends LightningElement {
     handleOrgSource(event) {
         this.orgSource = event.detail.value;
         this.orgRows = null;
+        this.errorMessage = null;
     }
 
     handleOrgValue(event) {
@@ -329,32 +338,46 @@ export default class FcCrateTab extends LightningElement {
 
     /** Puts the tab back into the state of an earlier run. */
     handleRerun(event) {
-        const request = event.detail.request;
-        this.initialOptions = request.options || null;
+        // The request comes from a stored row that another user may have written,
+        // so every part of it is checked before it is used, and nothing runs by itself.
+        const request = event.detail.request || {};
+        const text = (value) => (typeof value === 'string' ? value : null);
+        const options = request.options;
+        this.initialOptions = options && typeof options === 'object' && !Array.isArray(options) ? options : null;
         if (request.mode === 'listviews') {
-            this.selections = Array.isArray(request.listViews) ? request.listViews : [];
+            this.selections = (Array.isArray(request.listViews) ? request.listViews : [])
+                .filter((v) => v && typeof v === 'object' && text(v.objectApiName) && text(v.listViewId))
+                .map((v) => ({ objectApiName: v.objectApiName, listViewId: v.listViewId, label: text(v.label) || v.objectApiName }));
             this.setMode('listviews');
         } else if (request.mode === 'soql') {
-            this.soqlText = request.soql || '';
+            // Filled in for the user to read and run; never run automatically.
+            this.soqlText = text(request.soql) || '';
+            this.soqlIds = null;
             this.setMode('soql');
-            this.handleSoqlRun();
         } else if (request.mode === 'orgfiles') {
-            this.orgSource = request.source;
-            this.orgFolder = request.folderId || ALL_FOLDERS;
-            this.orgLibrary = request.libraryId || null;
-            this.orgEventType = request.eventType || '';
-            this.orgFrom = request.fromDate || null;
-            this.orgTo = request.toDate || null;
+            this.orgSource = ORG_LABELS[request.source] ? request.source : 'documents';
+            this.orgFolder = text(request.folderId) || ALL_FOLDERS;
+            this.orgLibrary = text(request.libraryId);
+            this.orgEventType = text(request.eventType) || '';
+            this.orgFrom = text(request.fromDate);
+            this.orgTo = text(request.toDate);
             this.setMode('orgfiles');
             this.handleOrgLoad();
         } else {
             // Runs that started from explicit records: a search, a record page or a list button.
-            this.searchObject = request.objectApiName || null;
-            this.searchTerm = request.term || '';
+            const ids = Array.isArray(request.recordIds) ? request.recordIds.filter((id) => text(id)) : [];
+            const tooMany = request.recordIdsTruncated === true;
+            this.searchObject = text(request.objectApiName);
+            this.searchTerm = text(request.term) || '';
+            this.searchedTerm = this.searchTerm;
             this.searchResults = null;
-            this.selectedIds = Array.isArray(request.recordIds) ? request.recordIds : [];
-            this.searchRequest = request;
+            this.searchTruncated = null;
+            this.selectedIds = tooMany ? [] : ids;
+            this.searchRequest = { mode: 'search', objectApiName: this.searchObject, term: this.searchTerm, recordIds: this.selectedIds };
             this.setMode('search');
+            if (tooMany) {
+                this.errorMessage = this.labels.Rerun_Truncated;
+            }
         }
     }
 }

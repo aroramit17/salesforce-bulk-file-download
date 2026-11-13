@@ -5,9 +5,10 @@
  * record Ids ever leave this class.
  */
 public with sharing class FcSelectionService {
-    public static final Integer MAX_RELATED = 2000;
-    public static final Integer MAX_SEARCH = 200;
-    public static final Integer MAX_QUERY = 10000;
+    // Caps. Tests lower them; every cap is reported when it is hit, never applied silently.
+    @TestVisible private static Integer maxRelated = 2000;
+    @TestVisible private static Integer maxSearch = 200;
+    @TestVisible private static Integer maxQuery = 10000;
 
     // ---- related records ----------------------------------------------------
 
@@ -27,7 +28,7 @@ public with sharing class FcSelectionService {
             }
             List<String> segments = path.split('\\.');
             if (segments.size() > 2) {
-                errors.add(path + ': only one or two levels are supported.');
+                errors.add(String.format(System.Label.Fc_Err_Levels, new List<Object>{ path }));
                 continue;
             }
             List<Id> current = new List<Id>{ recordId };
@@ -36,12 +37,18 @@ public with sharing class FcSelectionService {
             for (String segment : segments) {
                 Schema.ChildRelationship rel = findRelationship(currentType, segment.trim());
                 if (rel == null) {
-                    errors.add(path + ': no relationship named ' + segment.trim() + ' on ' + currentType.getDescribe().getName() + '.');
+                    errors.add(String.format(System.Label.Fc_Err_No_Relationship, new List<Object>{ path, segment.trim(), currentType.getDescribe().getName() }));
                     ok = false;
                     break;
                 }
                 try {
                     current = childIds(rel, current);
+                    if (current.size() > maxRelated) {
+                        while (current.size() > maxRelated) {
+                            current.remove(current.size() - 1);
+                        }
+                        errors.add(String.format(System.Label.Fc_Err_Related_Cap, new List<Object>{ path, String.valueOf(maxRelated) }));
+                    }
                 } catch (QueryException e) {
                     errors.add(path + ': ' + e.getMessage());
                     ok = false;
@@ -73,7 +80,7 @@ public with sharing class FcSelectionService {
         // Object and field names come from describe, never from the caller.
         String soql =
             'SELECT Id FROM ' + rel.getChildSObject().getDescribe().getName() +
-            ' WHERE ' + rel.getField().getDescribe().getName() + ' IN :parentIds LIMIT ' + MAX_RELATED;
+            ' WHERE ' + rel.getField().getDescribe().getName() + ' IN :parentIds LIMIT ' + (maxRelated + 1);
         for (SObject record : Database.queryWithBinds(soql, new Map<String, Object>{ 'parentIds' => parentIds }, AccessLevel.USER_MODE)) {
             ids.add(record.Id);
         }
@@ -83,22 +90,27 @@ public with sharing class FcSelectionService {
     // ---- search -------------------------------------------------------------
 
     @AuraEnabled
-    public static List<Map<String, String>> searchRecords(String objectApiName, String term) {
+    public static Map<String, Object> searchRecords(String objectApiName, String term) {
         Schema.SObjectType objectType = objectApiName == null ? null : Schema.getGlobalDescribe().get(objectApiName);
         if (objectType == null || !objectType.getDescribe().isAccessible()) {
-            throw auraError('Unknown object: ' + objectApiName);
+            throw auraError(String.format(System.Label.Fc_Err_Unknown_Object, new List<Object>{ objectApiName }));
         }
         List<Map<String, String>> found = new List<Map<String, String>>();
         String searchText = searchTextFor(term);
+        Map<String, Object> result = new Map<String, Object>{ 'records' => found, 'truncated' => false };
         if (searchText == null) {
-            return found;
+            return result;
         }
         String sosl =
             'FIND \'' + searchText + '\' IN NAME FIELDS RETURNING ' +
-            objectType.getDescribe().getName() + '(Id LIMIT ' + MAX_SEARCH + ')';
+            objectType.getDescribe().getName() + '(Id LIMIT ' + (maxSearch + 1) + ')';
         List<Id> ids = new List<Id>();
         for (SObject record : Search.query(sosl, AccessLevel.USER_MODE)[0]) {
             ids.add(record.Id);
+        }
+        if (ids.size() > maxSearch) {
+            ids.remove(ids.size() - 1);
+            result.put('truncated', true);
         }
         Map<Id, String> names = FcRecordService.getNames(ids);
         for (Id recordId : ids) {
@@ -106,7 +118,7 @@ public with sharing class FcSelectionService {
                 found.add(new Map<String, String>{ 'id' => recordId, 'name' => names.get(recordId) });
             }
         }
-        return found;
+        return result;
     }
 
     /**
@@ -138,21 +150,22 @@ public with sharing class FcSelectionService {
     @AuraEnabled
     public static List<Id> runQuery(String soql) {
         if (!canRunSoql()) {
-            throw auraError('You do not have permission to use SOQL mode.');
+            throw auraError(System.Label.Fc_Err_Soql_Permission);
         }
-        if (String.isBlank(soql) || soql.contains(';')) {
-            throw auraError('Enter one query of the form SELECT Id FROM Object ...');
+        // A semicolon inside a quoted value is fine; one outside it would start a second statement.
+        if (String.isBlank(soql) || soql.replaceAll('\'(\\\\.|[^\'\\\\])*\'', '').contains(';')) {
+            throw auraError(System.Label.Fc_Err_Soql_Form);
         }
         Matcher m = Pattern.compile('(?is)^\\s*select\\s+id\\s+from\\s+([a-z0-9_]+)\\b.*$').matcher(soql);
         if (!m.matches()) {
-            throw auraError('The query must start with SELECT Id FROM and select nothing else.');
+            throw auraError(System.Label.Fc_Err_Soql_Select);
         }
         if (!Schema.getGlobalDescribe().containsKey(m.group(1).toLowerCase())) {
-            throw auraError('Unknown object: ' + m.group(1));
+            throw auraError(String.format(System.Label.Fc_Err_Unknown_Object, new List<Object>{ m.group(1) }));
         }
         Matcher limitMatcher = Pattern.compile('(?is)\\blimit\\s+(\\d+)\\s*(offset\\s+\\d+\\s*)?$').matcher(soql.trim());
-        if (limitMatcher.find() && Long.valueOf(limitMatcher.group(1)) > MAX_QUERY) {
-            throw auraError('LIMIT cannot be more than ' + MAX_QUERY + '.');
+        if (limitMatcher.find() && (limitMatcher.group(1).length() > 9 || Integer.valueOf(limitMatcher.group(1)) > maxQuery)) {
+            throw auraError(String.format(System.Label.Fc_Err_Soql_Limit, new List<Object>{ String.valueOf(maxQuery) }));
         }
         List<Id> ids = new List<Id>();
         try {
@@ -163,6 +176,9 @@ public with sharing class FcSelectionService {
         } catch (QueryException e) {
             throw auraError(e.getMessage());
         }
+        if (ids.size() > maxQuery) {
+            throw auraError(String.format(System.Label.Fc_Err_Soql_Too_Many, new List<Object>{ String.valueOf(maxQuery) }));
+        }
         return ids;
     }
 
@@ -170,7 +186,8 @@ public with sharing class FcSelectionService {
     private static String withLimit(String soql) {
         String trimmed = soql.trim();
         Boolean hasLimit = Pattern.compile('(?is)\\blimit\\s+\\d+\\s*(offset\\s+\\d+\\s*)?$').matcher(trimmed).find();
-        return hasLimit ? trimmed : trimmed + ' LIMIT ' + MAX_QUERY;
+        // One more than the cap, so a query that matches too much can be told apart from one that fits.
+        return hasLimit ? trimmed : trimmed + ' LIMIT ' + (maxQuery + 1);
     }
 
     private static AuraHandledException auraError(String message) {

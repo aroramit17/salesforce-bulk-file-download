@@ -4,7 +4,21 @@
  * browser fetches the bytes. Runs with sharing and in user mode.
  */
 public with sharing class FcOrgFileService {
-    private static final Integer MAX_ROWS = 5000;
+    // Tests lower this. Loading more than the cap is refused with a message, never cut short silently.
+    @TestVisible private static Integer maxRows = 5000;
+
+    private static Integer queryLimit() {
+        return maxRows + 1;
+    }
+
+    private static void checkCap(Integer size) {
+        if (size > maxRows) {
+            String message = String.format(System.Label.Fc_Err_Too_Many_Files, new List<Object>{ String.valueOf(maxRows) });
+            AuraHandledException e = new AuraHandledException(message);
+            e.setMessage(message);
+            throw e;
+        }
+    }
 
     // ---- Documents ----------------------------------------------------------
 
@@ -21,9 +35,11 @@ public with sharing class FcOrgFileService {
 
     @AuraEnabled
     public static List<FcFileRow> getDocuments(Id folderId) {
+        Integer cap = queryLimit();
         List<Document> documents = folderId == null
-            ? [SELECT Id, Name, Type, BodyLength, FolderId, Url, CreatedDate FROM Document WITH USER_MODE ORDER BY Name LIMIT :MAX_ROWS]
-            : [SELECT Id, Name, Type, BodyLength, FolderId, Url, CreatedDate FROM Document WHERE FolderId = :folderId WITH USER_MODE ORDER BY Name LIMIT :MAX_ROWS];
+            ? [SELECT Id, Name, Type, BodyLength, FolderId, Url, CreatedDate FROM Document WITH USER_MODE ORDER BY Name LIMIT :cap]
+            : [SELECT Id, Name, Type, BodyLength, FolderId, Url, CreatedDate FROM Document WHERE FolderId = :folderId WITH USER_MODE ORDER BY Name LIMIT :cap];
+        checkCap(documents.size());
         Set<Id> folderIds = new Set<Id>();
         for (Document d : documents) {
             folderIds.add(d.FolderId);
@@ -69,14 +85,17 @@ public with sharing class FcOrgFileService {
         if (library.isEmpty()) {
             return rows;
         }
-        for (ContentVersion cv : [
+        Integer cap = queryLimit();
+        List<ContentVersion> versions = [
             SELECT Id, Title, FileExtension, ContentSize, CreatedDate, VersionNumber
             FROM ContentVersion
             WHERE IsLatest = TRUE AND ContentDocument.ParentId = :libraryId
             WITH USER_MODE
             ORDER BY Title
-            LIMIT :MAX_ROWS
-        ]) {
+            LIMIT :cap
+        ];
+        checkCap(versions.size());
+        for (ContentVersion cv : versions) {
             String ext = cv.FileExtension == null ? '' : cv.FileExtension;
             FcFileRow row = row(cv.Id, 'File', cv.CreatedDate);
             row.parentId = libraryId;
@@ -97,13 +116,16 @@ public with sharing class FcOrgFileService {
     @AuraEnabled
     public static List<FcFileRow> getStaticResources() {
         List<FcFileRow> rows = new List<FcFileRow>();
-        for (StaticResource r : [
+        Integer cap = queryLimit();
+        List<StaticResource> resources = [
             SELECT Id, Name, NamespacePrefix, ContentType, BodyLength, CreatedDate
             FROM StaticResource
             WITH USER_MODE
             ORDER BY Name
-            LIMIT :MAX_ROWS
-        ]) {
+            LIMIT :cap
+        ];
+        checkCap(resources.size());
+        for (StaticResource r : resources) {
             FcFileRow row = row(r.Id, 'StaticResource', r.CreatedDate);
             row.parentId = UserInfo.getOrganizationId();
             row.parentObject = 'StaticResource';
@@ -157,9 +179,11 @@ public with sharing class FcOrgFileService {
         String soql =
             'SELECT Id, EventType, LogDate, LogFileLength, Interval, Sequence, CreatedDate FROM EventLogFile' +
             (conditions.isEmpty() ? '' : ' WHERE ' + String.join(conditions, ' AND ')) +
-            ' ORDER BY LogDate DESC, EventType LIMIT ' + MAX_ROWS;
+            ' ORDER BY LogDate DESC, EventType LIMIT ' + queryLimit();
         List<FcFileRow> rows = new List<FcFileRow>();
-        for (EventLogFile log : (List<EventLogFile>) Database.queryWithBinds(soql, binds, AccessLevel.USER_MODE)) {
+        List<EventLogFile> logs = (List<EventLogFile>) Database.queryWithBinds(soql, binds, AccessLevel.USER_MODE);
+        checkCap(logs.size());
+        for (EventLogFile log : logs) {
             rows.add(eventLogRow(log.Id, log.EventType, log.LogDate, log.LogFileLength, log.Interval, log.Sequence, log.CreatedDate));
         }
         return rows;

@@ -12,6 +12,8 @@ const ROWS_PER_MESSAGE = 500;
 const MB = 1024 * 1024;
 const ENGINE_START_TIMEOUT_MS = 15000;
 const MAX_IDS_IN_REQUEST = 2000;
+const FOLDER_READY_TIMEOUT_MS = 30000;
+const FOLDER_WATCH_MS = 1000;
 
 const TYPE_EXTENSIONS = {
     all: [],
@@ -85,6 +87,8 @@ export default class FcCrateBuilder extends LightningElement {
     _folderOrigin = null;
     _folderRows = null;
     folderMode = false;
+    _folderWatch = null;
+    _folderReadyTimer = null;
     _listRequest = 0;
     _engineTimer = null;
     _onMessage = (event) => this.handleMessage(event);
@@ -151,8 +155,14 @@ export default class FcCrateBuilder extends LightningElement {
         this._connected = false;
         window.removeEventListener('message', this._onMessage);
         clearTimeout(this._engineTimer);
+        this.stopFolderWatch();
         if (this._jobId) {
-            this.postToEngine({ type: 'cancel', jobId: this._jobId });
+            const message = { type: 'cancel', jobId: this._jobId };
+            if (this.folderMode) {
+                this.postToFolder(message);
+            } else {
+                this.postToEngine(message);
+            }
         }
     }
 
@@ -382,10 +392,19 @@ export default class FcCrateBuilder extends LightningElement {
                 }
             }
         } else if (data.type === 'fatal') {
-            this._jobId = null;
-            this.errorMessage = data.code === 'AUTH' ? this.labels.Auth_Error : this.labels.Error + ' ' + data.message;
+            this.handleFatal(data);
         } else if (data.jobId && data.jobId === this._jobId) {
             this.handleJobMessage(data);
+        }
+    }
+
+    handleFatal(data) {
+        const duringRun = Boolean(data.jobId) && data.jobId === this._jobId;
+        this.stopFolderWatch();
+        this._jobId = null;
+        this.errorMessage = data.code === 'AUTH' ? this.labels.Auth_Error : this.labels.Error + ' ' + data.message;
+        if (duringRun) {
+            this.logRun({ ok: 0, failed: 0, cancelled: false, fatal: true, error: data.message, folder: this.folderMode });
         }
     }
 
@@ -396,6 +415,7 @@ export default class FcCrateBuilder extends LightningElement {
             this.saveBlob(data.name, data.blob);
             this.savedParts = this.savedParts.concat([{ name: data.name, sizeText: formatBytes(data.blob.size) }]);
         } else if (data.type === 'done') {
+            this.stopFolderWatch();
             this._jobId = null;
             this.result = data;
             this.phase = 'done';
@@ -405,16 +425,21 @@ export default class FcCrateBuilder extends LightningElement {
 
     /** Records the run in the job history. A logging problem never gets in the way of the download. */
     logRun(result) {
-        const request = this.request || {
-            mode: 'records',
-            objectApiName: this.objectApiName,
-            recordIds: this._currentIds.slice(0, MAX_IDS_IN_REQUEST)
-        };
+        const request = this.request
+            ? { ...this.request }
+            : { mode: 'records', objectApiName: this.objectApiName, recordIds: this._currentIds };
+        if (Array.isArray(request.recordIds) && request.recordIds.length > MAX_IDS_IN_REQUEST) {
+            // Too many to store; the history will say this run cannot be repeated.
+            request.recordIds = request.recordIds.slice(0, MAX_IDS_IN_REQUEST);
+            request.recordIdsTruncated = true;
+        }
         const options = { ...this.options };
         delete options.maxZipBytes;
         delete options.maxFilesPerZip;
         let status = 'Done';
-        if (result.cancelled) {
+        if (result.fatal) {
+            status = 'Failed';
+        } else if (result.cancelled) {
             status = 'Cancelled';
         } else if (result.failed) {
             status = 'Partial';
@@ -428,7 +453,7 @@ export default class FcCrateBuilder extends LightningElement {
             fileCount: result.ok,
             totalBytes: this._runBytes,
             request: JSON.stringify({ ...request, options }),
-            error: null
+            error: result.error || null
         };
         Promise.resolve()
             .then(() => logJob({ job }))
@@ -510,6 +535,40 @@ export default class FcCrateBuilder extends LightningElement {
         this._folderRows = rows;
         this.folderMode = true;
         this.beginRun(rows);
+        // The window is out of our hands: notice when it is closed, or never starts.
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        this._folderWatch = setInterval(() => {
+            if (!this._folderWindow || this._folderWindow.closed) {
+                this.endFolderRun();
+            }
+        }, FOLDER_WATCH_MS);
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        this._folderReadyTimer = setTimeout(() => {
+            if (!this._folderOrigin && this._jobId) {
+                this.stopFolderWatch();
+                this._jobId = null;
+                this.errorMessage = this.labels.Engine_Error;
+            }
+        }, FOLDER_READY_TIMEOUT_MS);
+    }
+
+    stopFolderWatch() {
+        clearInterval(this._folderWatch);
+        clearTimeout(this._folderReadyTimer);
+        this._folderWatch = null;
+        this._folderReadyTimer = null;
+    }
+
+    /** Ends a folder run from this side: the window was closed, or the user cancelled. */
+    endFolderRun() {
+        this.stopFolderWatch();
+        if (!this._jobId) {
+            return;
+        }
+        this._jobId = null;
+        this.result = { ok: this.progress.done || 0, failed: 0, oversized: 0, cancelled: true, folder: true };
+        this.phase = 'done';
+        this.logRun(this.result);
     }
 
     handleFolderMessage(event, data) {
@@ -528,8 +587,7 @@ export default class FcCrateBuilder extends LightningElement {
             this._folderOrigin = event.origin;
             this.sendJob((message) => this.postToFolder(message), this._folderRows, 'folder');
         } else if (data.type === 'fatal') {
-            this._jobId = null;
-            this.errorMessage = data.code === 'AUTH' ? this.labels.Auth_Error : this.labels.Error + ' ' + data.message;
+            this.handleFatal(data);
         } else if (data.jobId && data.jobId === this._jobId) {
             this.handleJobMessage(data);
         }
@@ -574,7 +632,14 @@ export default class FcCrateBuilder extends LightningElement {
         if (this._jobId) {
             const message = { type: 'cancel', jobId: this._jobId };
             if (this.folderMode) {
+                // The engine may still be waiting for a folder, so end the run here too.
                 this.postToFolder(message);
+                try {
+                    this._folderWindow.close();
+                } catch (e) {
+                    // the window is already gone
+                }
+                this.endFolderRun();
             } else {
                 this.postToEngine(message);
             }

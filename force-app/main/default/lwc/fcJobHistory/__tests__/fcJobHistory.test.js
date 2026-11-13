@@ -40,6 +40,14 @@ describe('c-fc-job-history', () => {
         expect(table.data[0]).toMatchObject({ name: 'FC-000001', sizeText: '1.5 MB', fileCount: 29, createdByName: 'Ada Admin' });
     });
 
+    it('shows readable words for the source, status and destination', async () => {
+        getJobs.mockResolvedValue([JOB, { ...JOB, id: 'a00B', sourceType: 'something new', status: 'Odd', destination: 'Folder' }]);
+        const el = await mount();
+        const data = el.shadowRoot.querySelector('lightning-datatable').data;
+        expect(data[0]).toMatchObject({ sourceLabel: 'c.Fc_Src_listviews', statusLabel: 'c.Fc_Status_Done', destinationLabel: 'c.Fc_Dest_Browser' });
+        expect(data[1]).toMatchObject({ sourceLabel: 'something new', statusLabel: 'Odd', destinationLabel: 'c.Fc_Dest_Folder' });
+    });
+
     it('hands the saved request to its host when Re-run is chosen', async () => {
         getJobs.mockResolvedValue([JOB]);
         const el = await mount();

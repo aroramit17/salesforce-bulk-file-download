@@ -440,6 +440,25 @@ describe('folder output', () => {
     });
 });
 
+describe('folder output before a folder is chosen', () => {
+    it('ends as cancelled when the run is cancelled while it waits for the folder', async () => {
+        const rows = [fileRow('068A', 'Acme', 'a', 'txt', A)];
+        const posts = [];
+        const fetchFn = fakeFetch({ [API + rows[0].path]: A });
+        const engine = createEngine({
+            fflate, core, fetchFn, post: (m) => posts.push(m), apiBase: API, sessionId: 'S', baseUrl: 'https://x', nonce: 'n1',
+            now: () => new Date(2026, 10, 13), makeBlob: concat, retryDelayMs: 0,
+            getFolderSink: () => new Promise(() => {}) // the user never picks a folder
+        });
+        await engine.handle({ fc: 1, type: 'start', jobId: 'j1', options: { ...OPTIONS, output: 'folder' }, objectLabel: 'Account' });
+        const running = engine.handle({ fc: 1, type: 'rows', jobId: 'j1', rows, last: true });
+        await engine.handle({ fc: 1, type: 'cancel', jobId: 'j1' });
+        await running;
+        expect(posts.filter((m) => m.type === 'done')[0]).toMatchObject({ cancelled: true, folder: true, ok: 0 });
+        expect(fetchFn.calls).toHaveLength(0);
+    });
+});
+
 describe('folder sink', () => {
     it('creates nested folders and writes the file', async () => {
         const root = fakeDir();

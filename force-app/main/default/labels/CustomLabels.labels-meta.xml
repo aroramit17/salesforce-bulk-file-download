@@ -1024,4 +1024,196 @@
         <shortDescription>Fc Set Layout</shortDescription>
         <value>Folder layout</value>
     </labels>
+    <labels>
+        <fullName>Fc_Err_Levels</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Err Levels</shortDescription>
+        <value>{0}: only one or two levels are supported.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Err_No_Relationship</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Err No Relationship</shortDescription>
+        <value>{0}: no relationship named {1} on {2}.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Err_Related_Cap</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Err Related Cap</shortDescription>
+        <value>{0}: more than {1} records. Only the first {1} are included.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Err_Unknown_Object</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Err Unknown Object</shortDescription>
+        <value>Unknown object: {0}</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Err_Soql_Permission</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Err Soql Permission</shortDescription>
+        <value>You do not have permission to use SOQL mode.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Err_Soql_Form</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Err Soql Form</shortDescription>
+        <value>Enter one query of the form SELECT Id FROM Object ...</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Err_Soql_Select</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Err Soql Select</shortDescription>
+        <value>The query must start with SELECT Id FROM and select nothing else.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Err_Soql_Limit</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Err Soql Limit</shortDescription>
+        <value>LIMIT cannot be more than {0}.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Err_Soql_Too_Many</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Err Soql Too Many</shortDescription>
+        <value>The query matches more than {0} records. Add a WHERE clause or a LIMIT.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Err_Too_Many_Files</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Err Too Many Files</shortDescription>
+        <value>More than {0} files. Narrow the selection by folder, library, event type or date.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Search_Truncated</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Search Truncated</shortDescription>
+        <value>Showing the first {0} records. Refine your search to see others.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Rerun_Truncated</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Rerun Truncated</shortDescription>
+        <value>This run covered more than 2,000 records, so it cannot be repeated from the history.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Folder_Cancelled</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Folder Cancelled</shortDescription>
+        <value>Cancelled. You can close this window.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Src_listviews</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Src listviews</shortDescription>
+        <value>List views</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Src_search</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Src search</shortDescription>
+        <value>Search</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Src_soql</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Src soql</shortDescription>
+        <value>SOQL</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Src_orgfiles</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Src orgfiles</shortDescription>
+        <value>Org files</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Src_records</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Src records</shortDescription>
+        <value>Records</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Status_Done</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Status Done</shortDescription>
+        <value>Done</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Status_Partial</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Status Partial</shortDescription>
+        <value>Partial</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Status_Cancelled</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Status Cancelled</shortDescription>
+        <value>Cancelled</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Status_Failed</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Status Failed</shortDescription>
+        <value>Failed</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Dest_Browser</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Dest Browser</shortDescription>
+        <value>Zip download</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Dest_Folder</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Dest Folder</shortDescription>
+        <value>Folder</value>
+    </labels>
 </CustomLabels>

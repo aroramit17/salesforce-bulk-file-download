@@ -50,6 +50,9 @@
                             data-id="search-run"></lightning-button>
                     </div>
                 </div>
+                <template lwc:if={searchTruncated}>
+                    <p class="slds-m-bottom_small" data-id="search-truncated">{searchTruncated}</p>
+                </template>
                 <template lwc:if={searchEmpty}>
                     <p class="slds-m-bottom_small" data-id="search-empty">{labels.Search_Empty}</p>
                 </template>

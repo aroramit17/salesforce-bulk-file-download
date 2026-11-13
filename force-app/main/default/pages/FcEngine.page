@@ -76,9 +76,9 @@
             status.textContent = '{!JSENCODE($Label.Fc_Folder_Working)} ' + message.done + ' / ' + message.total +
                 (message.current ? ' — ' + message.current : '');
         } else if (folderMode && message.type === 'done') {
-            status.textContent = '{!JSENCODE($Label.Fc_Folder_Done)}';
+            status.textContent = message.cancelled ? '{!JSENCODE($Label.Fc_Folder_Cancelled)}' : '{!JSENCODE($Label.Fc_Folder_Done)}';
         } else if (folderMode && message.type === 'fatal') {
-            status.textContent = message.message;
+            status.textContent = message.code === 'AUTH' ? '{!JSENCODE($Label.Fc_Auth_Error)}' : '{!JSENCODE($Label.Fc_Error)}';
         }
         link.post(message);
     }

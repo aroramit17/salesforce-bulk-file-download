@@ -129,4 +129,19 @@ private class FcOrgFileServiceTest {
             }
         }
     }
+
+    @IsTest
+    static void refusesToLoadMoreFilesThanTheCap() {
+        insert new Document(Name = 'One', Type = 'txt', Body = Blob.valueOf('a'), FolderId = UserInfo.getUserId());
+        insert new Document(Name = 'Two', Type = 'txt', Body = Blob.valueOf('b'), FolderId = UserInfo.getUserId());
+        FcOrgFileService.maxRows = 1;
+        try {
+            FcOrgFileService.getDocuments(null);
+            Assert.fail('Expected an exception');
+        } catch (AuraHandledException e) {
+            Assert.isTrue(e.getMessage().contains('More than 1'), e.getMessage());
+        }
+        FcOrgFileService.maxRows = 2;
+        Assert.areEqual(2, FcOrgFileService.getDocuments(null).size());
+    }
 }

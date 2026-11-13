@@ -457,6 +457,47 @@ describe('c-fc-crate-builder', () => {
             expect(post.mock.calls.filter((c) => c[0].type === 'start')).toHaveLength(1);
         });
 
+        it('ends the run as cancelled when the folder window is closed', async () => {
+            jest.useFakeTimers();
+            try {
+                const el = await mount({ recordIds: ['001A'] });
+                q(el, 'folder').click();
+                await flush();
+                Object.defineProperty(opened, 'closed', { value: true, configurable: true });
+                jest.advanceTimersByTime(2000);
+                await flush();
+                expect(q(el, 'done-text').textContent).toBe('c.Fc_Cancelled');
+            } finally {
+                jest.useRealTimers();
+            }
+        });
+
+        it('gives up when the folder window never starts', async () => {
+            jest.useFakeTimers();
+            try {
+                const el = await mount({ recordIds: ['001A'] });
+                fromEngine(el, { type: 'ready' });
+                q(el, 'folder').click();
+                await flush();
+                jest.advanceTimersByTime(40000);
+                await flush();
+                expect(q(el, 'error').textContent).toBe('c.Fc_Engine_Error');
+            } finally {
+                jest.useRealTimers();
+            }
+        });
+
+        it('ends the run at once when Cancel is clicked, and closes the window', async () => {
+            const el = await mount({ recordIds: ['001A'] });
+            const close = jest.spyOn(opened, 'close').mockImplementation(() => {});
+            q(el, 'folder').click();
+            await flush();
+            q(el, 'cancel').click();
+            await flush();
+            expect(close).toHaveBeenCalled();
+            expect(q(el, 'done-text').textContent).toBe('c.Fc_Cancelled');
+        });
+
         it('explains when the browser blocks the window', async () => {
             openSpy.mockReturnValue(null);
             const el = await mount({ recordIds: ['001A'] });
@@ -472,5 +513,42 @@ describe('c-fc-crate-builder', () => {
         expect(el.shadowRoot.querySelector('[data-option="layout"]').value).toBe('Flat');
         expect(el.shadowRoot.querySelector('[data-option="pattern"]').value).toBe('{Title}.{ext}');
         expect(q(el, 'parts-notice')).toBeNull();
+    });
+
+    it('logs a run that stopped with a fatal error as failed', async () => {
+        const el = await mount({ recordIds: ['001A'] });
+        const frame = el.shadowRoot.querySelector('iframe');
+        const post = jest.spyOn(frame.contentWindow, 'postMessage').mockImplementation(() => {});
+        fromEngine(el, { type: 'ready' });
+        await flush();
+        q(el, 'download').click();
+        await flush();
+        fromEngine(el, { type: 'fatal', jobId: post.mock.calls[0][0].jobId, code: 'AUTH', message: 'HTTP 401' });
+        await flush();
+        expect(logJob.mock.calls[0][0].job).toMatchObject({ status: 'Failed', error: 'HTTP 401', fileCount: 0 });
+    });
+
+    it('does not log a fatal error that is not part of a run', async () => {
+        const el = await mount({ recordIds: ['001A'] });
+        fromEngine(el, { type: 'ready' });
+        fromEngine(el, { type: 'fatal', jobId: null, code: 'AUTH', message: 'HTTP 401' });
+        await flush();
+        expect(logJob).not.toHaveBeenCalled();
+    });
+
+    it('marks the saved request when it had to leave record ids out', async () => {
+        const ids = Array.from({ length: 2100 }, (_, i) => 'id' + i);
+        const el = await mount({ recordIds: ids });
+        const frame = el.shadowRoot.querySelector('iframe');
+        const post = jest.spyOn(frame.contentWindow, 'postMessage').mockImplementation(() => {});
+        fromEngine(el, { type: 'ready' });
+        await flush();
+        q(el, 'download').click();
+        await flush();
+        fromEngine(el, { type: 'done', jobId: post.mock.calls[0][0].jobId, ok: 3, failed: 0, oversized: 0, cancelled: false });
+        await flush();
+        const request = JSON.parse(logJob.mock.calls[0][0].job.request);
+        expect(request.recordIds).toHaveLength(2000);
+        expect(request.recordIdsTruncated).toBe(true);
     });
 });

@@ -16,12 +16,12 @@ export default class FcJobHistory extends LightningElement {
     columns = [
         { label: LABELS.Col_Job, fieldName: 'name', initialWidth: 110 },
         { label: LABELS.Col_When, fieldName: 'createdDate', type: 'date', typeAttributes: { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' } },
-        { label: LABELS.Col_Source, fieldName: 'sourceType' },
+        { label: LABELS.Col_Source, fieldName: 'sourceLabel' },
         { label: LABELS.Object, fieldName: 'objectApiName' },
         { label: LABELS.Col_Files, fieldName: 'fileCount', type: 'number', initialWidth: 90 },
         { label: LABELS.Col_Size, fieldName: 'sizeText', initialWidth: 100 },
-        { label: LABELS.Col_Destination, fieldName: 'destination', initialWidth: 110 },
-        { label: LABELS.Col_Status, fieldName: 'status', initialWidth: 110 },
+        { label: LABELS.Col_Destination, fieldName: 'destinationLabel', initialWidth: 130 },
+        { label: LABELS.Col_Status, fieldName: 'statusLabel', initialWidth: 110 },
         { label: LABELS.Col_By, fieldName: 'createdByName' },
         { type: 'action', typeAttributes: { rowActions: [{ label: LABELS.Rerun, name: 'rerun' }] } }
     ];
@@ -33,7 +33,15 @@ export default class FcJobHistory extends LightningElement {
     async load() {
         try {
             const jobs = await getJobs();
-            this.rows = (jobs || []).map((job) => ({ ...job, sizeText: formatBytes(job.totalBytes || 0) }));
+            // Stored values are short codes; show the translated word when there is one.
+            const word = (prefix, value) => this.labels[prefix + value] || value;
+            this.rows = (jobs || []).map((job) => ({
+                ...job,
+                sizeText: formatBytes(job.totalBytes || 0),
+                sourceLabel: word('Src_', job.sourceType),
+                statusLabel: word('Status_', job.status),
+                destinationLabel: word('Dest_', job.destination)
+            }));
         } catch (e) {
             this.errorMessage = this.labels.Error + ' ' + errorText(e);
         }

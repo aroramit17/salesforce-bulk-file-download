@@ -480,7 +480,12 @@ root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows
         async function runFolder(job) {
             var options = job.options;
             var rows = job.rows;
-            var sink = await deps.getFolderSink();
+            // Wait for the user to pick a folder, unless the run is cancelled first.
+            var sink = await Promise.race([deps.getFolderSink(), job.cancelSignal.then(function () { return null; })]);
+            if (!sink) {
+                send('done', { jobId: job.id, ok: 0, failed: 0, oversized: 0, cancelled: true, folder: true });
+                return;
+            }
             var totalBytes = rows.reduce(function (n, r) { return n + (r.size || 0); }, 0);
             var used = new Set(['manifest.csv', 'errors.csv']);
             var manifest = [];
@@ -581,6 +586,8 @@ root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows
                     id: message.jobId, options: message.options, objectLabel: message.objectLabel || 'Files',
                     rows: [], cancelled: false
                 };
+                var started = jobs[message.jobId];
+                started.cancelSignal = new Promise(function (resolve) { started.signalCancel = resolve; });
             } else if (message.type === 'rows' && jobs[message.jobId]) {
                 var job = jobs[message.jobId];
                 job.rows = job.rows.concat(message.rows || []);
@@ -597,6 +604,7 @@ root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows
                 }
             } else if (message.type === 'cancel' && jobs[message.jobId]) {
                 jobs[message.jobId].cancelled = true;
+                jobs[message.jobId].signalCancel();
             }
         }
 

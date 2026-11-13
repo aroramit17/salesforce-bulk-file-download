@@ -7,12 +7,12 @@
 | `ContentDocumentLink` filter rule | Must filter on `LinkedEntityId` or similar | Always queried by `LinkedEntityId IN` a chunk of Ids |
 | Zip format | 4 GB and 65,535 entries per classic zip | Parts are capped at 3,500 MB and 60,000 files |
 | Browser memory | Varies | Parts default to 1,500 MB and 500 files |
-| A single huge file | Bigger than the part size | Not zipped; listed in `manifest.csv` with a link. Folder output has no such limit. |
+| A single huge file | Bigger than the part size | Not zipped; listed in `manifest.csv` with a link. Folder output writes it, but still holds each file in browser memory while it is written. |
 | API requests | One per file, against the org's daily limit | Shown on the FileCrate Setup tab |
-| Related records | 2,000 per relationship path | Configure narrower paths if you hit it |
-| Search results | 200 records | Refine the search |
-| SOQL mode | 10,000 records | Add a WHERE clause or LIMIT |
-| Org file sources | 5,000 rows per load | Filter by folder, library, event type or date |
+| Related records | 2,000 per relationship path | The screen says when a path has more; configure narrower paths |
+| Search results | 200 records | The screen says when there are more; refine the search |
+| SOQL mode | 10,000 records | A query that matches more is refused; add a WHERE clause or LIMIT |
+| Org file sources | 5,000 files per load | A load with more is refused; filter by folder, event type or date |
 
 ## What has been checked
 

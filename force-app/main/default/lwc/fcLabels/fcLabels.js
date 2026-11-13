@@ -123,6 +123,30 @@ import Fc_Set_Notes from '@salesforce/label/c.Fc_Set_Notes';
 import Fc_Set_Latest from '@salesforce/label/c.Fc_Set_Latest';
 import Fc_Set_Pattern from '@salesforce/label/c.Fc_Set_Pattern';
 import Fc_Set_Layout from '@salesforce/label/c.Fc_Set_Layout';
+import Fc_Err_Levels from '@salesforce/label/c.Fc_Err_Levels';
+import Fc_Err_No_Relationship from '@salesforce/label/c.Fc_Err_No_Relationship';
+import Fc_Err_Related_Cap from '@salesforce/label/c.Fc_Err_Related_Cap';
+import Fc_Err_Unknown_Object from '@salesforce/label/c.Fc_Err_Unknown_Object';
+import Fc_Err_Soql_Permission from '@salesforce/label/c.Fc_Err_Soql_Permission';
+import Fc_Err_Soql_Form from '@salesforce/label/c.Fc_Err_Soql_Form';
+import Fc_Err_Soql_Select from '@salesforce/label/c.Fc_Err_Soql_Select';
+import Fc_Err_Soql_Limit from '@salesforce/label/c.Fc_Err_Soql_Limit';
+import Fc_Err_Soql_Too_Many from '@salesforce/label/c.Fc_Err_Soql_Too_Many';
+import Fc_Err_Too_Many_Files from '@salesforce/label/c.Fc_Err_Too_Many_Files';
+import Fc_Search_Truncated from '@salesforce/label/c.Fc_Search_Truncated';
+import Fc_Rerun_Truncated from '@salesforce/label/c.Fc_Rerun_Truncated';
+import Fc_Folder_Cancelled from '@salesforce/label/c.Fc_Folder_Cancelled';
+import Fc_Src_listviews from '@salesforce/label/c.Fc_Src_listviews';
+import Fc_Src_search from '@salesforce/label/c.Fc_Src_search';
+import Fc_Src_soql from '@salesforce/label/c.Fc_Src_soql';
+import Fc_Src_orgfiles from '@salesforce/label/c.Fc_Src_orgfiles';
+import Fc_Src_records from '@salesforce/label/c.Fc_Src_records';
+import Fc_Status_Done from '@salesforce/label/c.Fc_Status_Done';
+import Fc_Status_Partial from '@salesforce/label/c.Fc_Status_Partial';
+import Fc_Status_Cancelled from '@salesforce/label/c.Fc_Status_Cancelled';
+import Fc_Status_Failed from '@salesforce/label/c.Fc_Status_Failed';
+import Fc_Dest_Browser from '@salesforce/label/c.Fc_Dest_Browser';
+import Fc_Dest_Folder from '@salesforce/label/c.Fc_Dest_Folder';
 
 // Every piece of user-facing text, keyed without the Fc_ prefix.
 export const LABELS = {
@@ -251,6 +275,30 @@ export const LABELS = {
     Set_Latest: Fc_Set_Latest,
     Set_Pattern: Fc_Set_Pattern,
     Set_Layout: Fc_Set_Layout,
+    Err_Levels: Fc_Err_Levels,
+    Err_No_Relationship: Fc_Err_No_Relationship,
+    Err_Related_Cap: Fc_Err_Related_Cap,
+    Err_Unknown_Object: Fc_Err_Unknown_Object,
+    Err_Soql_Permission: Fc_Err_Soql_Permission,
+    Err_Soql_Form: Fc_Err_Soql_Form,
+    Err_Soql_Select: Fc_Err_Soql_Select,
+    Err_Soql_Limit: Fc_Err_Soql_Limit,
+    Err_Soql_Too_Many: Fc_Err_Soql_Too_Many,
+    Err_Too_Many_Files: Fc_Err_Too_Many_Files,
+    Search_Truncated: Fc_Search_Truncated,
+    Rerun_Truncated: Fc_Rerun_Truncated,
+    Folder_Cancelled: Fc_Folder_Cancelled,
+    Src_listviews: Fc_Src_listviews,
+    Src_search: Fc_Src_search,
+    Src_soql: Fc_Src_soql,
+    Src_orgfiles: Fc_Src_orgfiles,
+    Src_records: Fc_Src_records,
+    Status_Done: Fc_Status_Done,
+    Status_Partial: Fc_Status_Partial,
+    Status_Cancelled: Fc_Status_Cancelled,
+    Status_Failed: Fc_Status_Failed,
+    Dest_Browser: Fc_Dest_Browser,
+    Dest_Folder: Fc_Dest_Folder,
 };
 
 /** Fills {0}, {1}... placeholders in a label. */

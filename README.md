@@ -84,7 +84,7 @@ Salesforce passes the ticked record Ids to the flow by itself.
 
 ## Save to a folder
 
-In Chrome and Edge the download screen also shows **Save to a folder**. It opens a small FileCrate window where you choose a folder; files are written there directly with no zip and no size limit per file. Existing files are never overwritten: a clashing name gets ` (2)`. Firefox and Safari do not have the folder picker, so they offer zip only.
+In Chrome and Edge the download screen also shows **Save to a folder**. It opens a small FileCrate window where you choose a folder; files are written there directly with no zip and no zip size limit. Each file is still held in browser memory while it is written. Existing files are never overwritten: a clashing name gets ` (2)`. Firefox and Safari do not have the folder picker, so they offer zip only.
 
 ## Settings
 

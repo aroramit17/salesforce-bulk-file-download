@@ -62,10 +62,13 @@ describe('c-fc-crate-tab', () => {
             objectApiName === 'Account' ? [{ value: '00B1', label: 'All Accounts' }] : [{ value: '00B2', label: 'My Cases' }]
         );
         canRunSoql.mockResolvedValue(true);
-        searchRecords.mockResolvedValue([
-            { id: '001A', name: 'Acme' },
-            { id: '001B', name: 'Acme West' }
-        ]);
+        searchRecords.mockResolvedValue({
+            truncated: false,
+            records: [
+                { id: '001A', name: 'Acme' },
+                { id: '001B', name: 'Acme West' }
+            ]
+        });
         runQuery.mockResolvedValue(['001A', '001B', '001C']);
         getDocumentFolders.mockResolvedValue([{ value: '005ME', label: 'My Personal Documents' }]);
         getLibraries.mockResolvedValue([{ value: '058A', label: 'Handbooks' }]);
@@ -161,8 +164,20 @@ describe('c-fc-crate-tab', () => {
             expect(builder(el).request).toEqual({ mode: 'search', objectApiName: 'Account', term: 'acme', recordIds: ['001B'] });
         });
 
+        it('says so when there are more matches than it shows', async () => {
+            searchRecords.mockResolvedValue({ truncated: true, records: [{ id: '001A', name: 'Acme' }] });
+            const el = await mount();
+            await mode(el, 'search');
+            await choose(el, 'search-object', 'Account');
+            q(el, 'search-term').dispatchEvent(new CustomEvent('change', { detail: { value: 'acme' } }));
+            expect(q(el, 'search-truncated')).toBeNull();
+            q(el, 'search-run').click();
+            await flush();
+            expect(q(el, 'search-truncated')).not.toBeNull();
+        });
+
         it('says so when nothing is found', async () => {
-            searchRecords.mockResolvedValue([]);
+            searchRecords.mockResolvedValue({ truncated: false, records: [] });
             const el = await mount();
             await mode(el, 'search');
             await choose(el, 'search-object', 'Account');
@@ -307,11 +322,29 @@ describe('c-fc-crate-tab', () => {
             expect(builder(el).objectApiName).toBe('Account');
         });
 
-        it('runs a saved query again', async () => {
+        it('fills in a saved query but waits for the user to run it', async () => {
             const el = await mount();
             await rerun(el, { mode: 'soql', objectApiName: 'Account', soql: 'SELECT Id FROM Account', options: {} });
-            expect(runQuery).toHaveBeenCalledWith({ soql: 'SELECT Id FROM Account' });
-            expect(builder(el).recordIds).toEqual(['001A', '001B', '001C']);
+            expect(q(el, 'mode').value).toBe('soql');
+            expect(q(el, 'soql-text').value).toBe('SELECT Id FROM Account');
+            expect(runQuery).not.toHaveBeenCalled();
+            expect(builder(el)).toBeNull();
+        });
+
+        it('survives a saved request with a broken shape', async () => {
+            const el = await mount();
+            await rerun(el, { mode: 'listviews', listViews: [null, { objectApiName: 'Account' }, 'x', { objectApiName: 'Case', listViewId: '00B2', label: 7 }], options: 'nope' });
+            expect(builder(el).listViews).toEqual([{ objectApiName: 'Case', listViewId: '00B2', label: 'Case' }]);
+            expect(builder(el).initialOptions).toBeNull();
+            await rerun(el, { mode: 'records', recordIds: 'not a list' });
+            expect(builder(el)).toBeNull();
+        });
+
+        it('explains when a saved run had too many records to repeat', async () => {
+            const el = await mount();
+            await rerun(el, { mode: 'records', objectApiName: 'Account', recordIds: ['001A'], recordIdsTruncated: true });
+            expect(q(el, 'error').textContent).toBe('c.Fc_Rerun_Truncated');
+            expect(builder(el)).toBeNull();
         });
 
         it('loads a saved org file source again', async () => {

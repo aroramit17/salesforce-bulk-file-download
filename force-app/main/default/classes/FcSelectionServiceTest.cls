@@ -74,8 +74,10 @@ private class FcSelectionServiceTest {
         Id me = UserInfo.getUserId();
         Test.setFixedSearchResults(new List<Id>{ me });
 
-        List<Map<String, String>> found = FcSelectionService.searchRecords('User', 'Someone');
+        Map<String, Object> result = FcSelectionService.searchRecords('User', 'Someone');
+        List<Map<String, String>> found = (List<Map<String, String>>) result.get('records');
 
+        Assert.areEqual(false, result.get('truncated'));
         Assert.areEqual(1, found.size());
         Assert.areEqual(String.valueOf(me), found[0].get('id'));
         Assert.areEqual(UserInfo.getName(), found[0].get('name'));
@@ -84,16 +86,16 @@ private class FcSelectionServiceTest {
     @IsTest
     static void treatsSearchPunctuationAndOperatorsAsText() {
         Test.setFixedSearchResults(new List<Id>{ UserInfo.getUserId() });
-        List<Map<String, String>> found = FcSelectionService.searchRecords('User', 'O\'Brien "x" AND -y \\ (z) OR');
-        Assert.areEqual(1, found.size());
+        Map<String, Object> result = FcSelectionService.searchRecords('User', 'O\'Brien "x" AND -y \\ (z) OR');
+        Assert.areEqual(1, ((List<Map<String, String>>) result.get('records')).size());
         Assert.areEqual('Brien* AND xx*', FcSelectionService.searchTextFor('O\'Brien "xx" AND -y \\ (z) OR'));
     }
 
     @IsTest
     static void returnsNothingForAShortOrEmptySearch() {
-        Assert.areEqual(0, FcSelectionService.searchRecords('User', ' a ').size());
-        Assert.areEqual(0, FcSelectionService.searchRecords('User', null).size());
-        Assert.areEqual(0, FcSelectionService.searchRecords('User', '* ?').size());
+        Assert.areEqual(0, ((List<Map<String, String>>) FcSelectionService.searchRecords('User', ' a ').get('records')).size());
+        Assert.areEqual(0, ((List<Map<String, String>>) FcSelectionService.searchRecords('User', null).get('records')).size());
+        Assert.areEqual(0, ((List<Map<String, String>>) FcSelectionService.searchRecords('User', '* ?').get('records')).size());
     }
 
     @IsTest
@@ -160,6 +162,9 @@ private class FcSelectionServiceTest {
             assertRejected('SELECT Id FROM NoSuchObject__c');
             assertRejected('SELECT Id FROM Account LIMIT 20000');
             assertRejected('SELECT Id FROM Account WHERE (');
+            assertRejected('SELECT Id FROM Account FOR UPDATE');
+            assertRejected('SELECT Id FROM Account ALL ROWS');
+            assertRejected('SELECT Id FROM Account LIMIT 99999999999999999999999999');
             assertRejected('');
             assertRejected(null);
         }
@@ -167,11 +172,60 @@ private class FcSelectionServiceTest {
 
     @IsTest
     static void capsUnlimitedQueries() {
-        Assert.areEqual('SELECT Id FROM Account LIMIT 10000', FcSelectionService.withLimit('SELECT Id FROM Account'));
+        Assert.areEqual('SELECT Id FROM Account LIMIT 10001', FcSelectionService.withLimit('SELECT Id FROM Account'));
         Assert.areEqual('SELECT Id FROM Account limit 50', FcSelectionService.withLimit('SELECT Id FROM Account limit 50'));
         Assert.areEqual(
-            'SELECT Id FROM Account WHERE Id IN (SELECT AccountId FROM Contact LIMIT 5) LIMIT 10000',
+            'SELECT Id FROM Account WHERE Id IN (SELECT AccountId FROM Contact LIMIT 5) LIMIT 10001',
             FcSelectionService.withLimit('SELECT Id FROM Account WHERE Id IN (SELECT AccountId FROM Contact LIMIT 5)')
         );
+    }
+
+    @IsTest
+    static void saysSoWhenASearchFindsMoreThanItShows() {
+        User other;
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            other = FcTestData.standardUser();
+        }
+        FcSelectionService.maxSearch = 1;
+        Test.setFixedSearchResults(new List<Id>{ UserInfo.getUserId(), other.Id });
+        Map<String, Object> result = FcSelectionService.searchRecords('User', 'Someone');
+        Assert.areEqual(true, result.get('truncated'));
+        Assert.areEqual(1, ((List<Map<String, String>>) result.get('records')).size());
+    }
+
+    @IsTest
+    static void saysSoWhenARelationshipHasMoreRecordsThanItIncludes() {
+        FcJob__c job = FcTestData.record('Acme');
+        FcTestData.attachment(job.Id, 'one.txt', 'a');
+        FcTestData.attachment(job.Id, 'two.txt', 'b');
+        FcSelectionService.maxRelated = 1;
+
+        Map<String, Object> result = FcSelectionService.getRelatedIds(job.Id, new List<String>{ 'Attachments' });
+
+        Assert.areEqual(1, byPath(result).get('Attachments').size());
+        List<String> errors = (List<String>) result.get('errors');
+        Assert.areEqual(1, errors.size());
+        Assert.isTrue(errors[0].contains('Attachments') && errors[0].contains('more than 1'), errors[0]);
+    }
+
+    @IsTest
+    static void refusesAQueryThatMatchesMoreThanTheCap() {
+        FcTestData.record('Acme');
+        FcTestData.record('Acme');
+        User admin = FcTestData.runner();
+        System.runAs(admin) {
+            FcSelectionService.maxQuery = 1;
+            assertRejected('SELECT Id FROM FcJob__c WHERE Status__c = \'Acme\'');
+            Assert.areEqual(1, FcSelectionService.runQuery('SELECT Id FROM FcJob__c WHERE Status__c = \'Acme\' LIMIT 1').size());
+        }
+    }
+
+    @IsTest
+    static void allowsASemicolonInsideAQuotedValue() {
+        FcJob__c a = FcTestData.record('A;B');
+        User admin = FcTestData.runner();
+        System.runAs(admin) {
+            Assert.areEqual(new List<Id>{ a.Id }, FcSelectionService.runQuery('SELECT Id FROM FcJob__c WHERE Status__c = \'A;B\''));
+        }
     }
 }

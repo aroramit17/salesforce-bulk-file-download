@@ -31,6 +31,8 @@ Only letters and digits from the search box are used, each as a prefix-matched w
 
 `FcJob__c` is private. A user sees their own runs. `FileCrate_Admin` grants View All. The stored request can contain record Ids and a SOQL string, but never file contents.
 
+The history is written by the browser after a run, so it is a convenience, not an audit trail: a run can finish without being logged, and a user can create a job row by hand. For that reason "Run again" checks every part of a stored request before using it, and a stored SOQL query is only filled in for the user to read and run, never run automatically.
+
 ## CSV safety
 
 Cells in `manifest.csv` and `errors.csv` that start with `=`, `+`, `-` or `@` (also after leading whitespace) are prefixed with a single quote, so a spreadsheet does not run a file name as a formula.
