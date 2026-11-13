@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  jest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Fail if the generated engine bundle is stale
+        run: git diff --exit-code -- force-app/main/default/staticresources/fcEngineBundle.js
+      - run: npm test
+
+  apex:
+    runs-on: ubuntu-latest
+    needs: jest
+    env:
+      DEVHUB_SFDX_URL: ${{ secrets.DEVHUB_SFDX_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip when no Dev Hub secret is configured
+        if: env.DEVHUB_SFDX_URL == ''
+        run: echo "DEVHUB_SFDX_URL is not set; skipping scratch org tests."
+      - name: Install Salesforce CLI
+        if: env.DEVHUB_SFDX_URL != ''
+        run: npm install --global @salesforce/cli
+      - name: Authenticate Dev Hub
+        if: env.DEVHUB_SFDX_URL != ''
+        run: |
+          echo "$DEVHUB_SFDX_URL" > devhub.txt
+          sf org login sfdx-url --sfdx-url-file devhub.txt --alias devhub --set-default-dev-hub
+          rm devhub.txt
+      - name: Create scratch org
+        if: env.DEVHUB_SFDX_URL != ''
+        run: sf org create scratch --definition-file config/project-scratch-def.json --alias ci --duration-days 1 --wait 15
+      - name: Deploy
+        if: env.DEVHUB_SFDX_URL != ''
+        run: sf project deploy start --target-org ci
+      - name: Run Apex tests
+        if: env.DEVHUB_SFDX_URL != ''
+        run: sf apex run test --target-org ci --code-coverage --result-format human --wait 20
+      - name: Delete scratch org
+        if: always() && env.DEVHUB_SFDX_URL != ''
+        run: sf org delete scratch --target-org ci --no-prompt
