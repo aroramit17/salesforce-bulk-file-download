@@ -173,6 +173,11 @@ describe('csv', () => {
         expect(csvEscape('-1')).toBe("'-1");
         expect(csvEscape('@x')).toBe("'@x");
     });
+    it('neutralises formula cells hidden behind leading whitespace', () => {
+        expect(csvEscape('\t=1+1')).toBe("'\t=1+1");
+        expect(csvEscape('  @x')).toBe("'  @x");
+        expect(csvEscape('\r=1')).toBe('"\'\r=1"');
+    });
     it('writes empty text for null and keeps numbers', () => {
         expect(csvEscape(null)).toBe('');
         expect(csvEscape(42)).toBe('42');

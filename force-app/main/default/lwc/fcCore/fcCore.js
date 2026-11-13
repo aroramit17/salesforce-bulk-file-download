@@ -129,7 +129,7 @@ export function csvEscape(v) {
         return '';
     }
     let s = String(v);
-    if (typeof v === 'string' && /^[=+\-@]/.test(s)) {
+    if (typeof v === 'string' && /^\s*[=+\-@]/.test(s)) {
         s = "'" + s;
     }
     return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
