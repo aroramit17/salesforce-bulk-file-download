@@ -5,6 +5,8 @@
 const DEFAULT_PATTERN = '{RecordName}_{Title}.{ext}';
 const STORED_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'zip', 'docx', 'xlsx', 'pptx', 'mp4', 'mp3'];
 const MAX_SEGMENT = 150;
+// Device names Windows refuses as a file or folder name, with or without an extension.
+const RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
 
 export function sanitizeSegment(s) {
     const cleaned = String(s === null || s === undefined ? '' : s)
@@ -13,7 +15,10 @@ export function sanitizeSegment(s) {
         .slice(0, MAX_SEGMENT)
         .replace(/^\s+/, '')
         .replace(/[.\s]+$/, '');
-    return cleaned === '' ? '_' : cleaned;
+    if (cleaned === '') {
+        return '_';
+    }
+    return RESERVED.test(cleaned) ? '_' + cleaned : cleaned;
 }
 
 function tokenValue(v) {
@@ -32,15 +37,16 @@ export function applyPattern(pattern, row) {
         CreatedDate: tokenValue(String(row.createdDate || '').slice(0, 10)),
         Version: tokenValue(row.version)
     };
-    let name = (pattern && pattern.trim() ? pattern : DEFAULT_PATTERN).replace(/\{(\w+)\}/g, (match, token) =>
+    const name = (pattern && pattern.trim() ? pattern : DEFAULT_PATTERN).replace(/\{(\w+)\}/g, (match, token) =>
         Object.prototype.hasOwnProperty.call(values, token) ? values[token] : match
     );
-    if (row.isLatest === false && row.version) {
-        const suffix = '_v' + tokenValue(row.version);
-        const tail = '.' + ext;
-        name = ext && name.endsWith(tail) ? name.slice(0, -tail.length) + suffix + tail : name + suffix;
-    }
-    return sanitizeSegment(name);
+    // Cut the stem, never the version suffix or the extension.
+    const dotExt = ext && name.endsWith('.' + ext) ? '.' + ext : '';
+    const stem = dotExt ? name.slice(0, -dotExt.length) : name;
+    const suffix = row.isLatest === false && row.version ? '_v' + tokenValue(row.version) : '';
+    const tail = suffix + dotExt;
+    const cut = sanitizeSegment(stem).slice(0, Math.max(1, MAX_SEGMENT - tail.length));
+    return sanitizeSegment(cut + tail);
 }
 
 export function folderFor(layout, row) {

@@ -7,6 +7,8 @@
 const DEFAULT_PATTERN = '{RecordName}_{Title}.{ext}';
 const STORED_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'zip', 'docx', 'xlsx', 'pptx', 'mp4', 'mp3'];
 const MAX_SEGMENT = 150;
+// Device names Windows refuses as a file or folder name, with or without an extension.
+const RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
 
 function sanitizeSegment(s) {
     const cleaned = String(s === null || s === undefined ? '' : s)
@@ -15,7 +17,10 @@ function sanitizeSegment(s) {
         .slice(0, MAX_SEGMENT)
         .replace(/^\s+/, '')
         .replace(/[.\s]+$/, '');
-    return cleaned === '' ? '_' : cleaned;
+    if (cleaned === '') {
+        return '_';
+    }
+    return RESERVED.test(cleaned) ? '_' + cleaned : cleaned;
 }
 
 function tokenValue(v) {
@@ -34,15 +39,16 @@ function applyPattern(pattern, row) {
         CreatedDate: tokenValue(String(row.createdDate || '').slice(0, 10)),
         Version: tokenValue(row.version)
     };
-    let name = (pattern && pattern.trim() ? pattern : DEFAULT_PATTERN).replace(/\{(\w+)\}/g, (match, token) =>
+    const name = (pattern && pattern.trim() ? pattern : DEFAULT_PATTERN).replace(/\{(\w+)\}/g, (match, token) =>
         Object.prototype.hasOwnProperty.call(values, token) ? values[token] : match
     );
-    if (row.isLatest === false && row.version) {
-        const suffix = '_v' + tokenValue(row.version);
-        const tail = '.' + ext;
-        name = ext && name.endsWith(tail) ? name.slice(0, -tail.length) + suffix + tail : name + suffix;
-    }
-    return sanitizeSegment(name);
+    // Cut the stem, never the version suffix or the extension.
+    const dotExt = ext && name.endsWith('.' + ext) ? '.' + ext : '';
+    const stem = dotExt ? name.slice(0, -dotExt.length) : name;
+    const suffix = row.isLatest === false && row.version ? '_v' + tokenValue(row.version) : '';
+    const tail = suffix + dotExt;
+    const cut = sanitizeSegment(stem).slice(0, Math.max(1, MAX_SEGMENT - tail.length));
+    return sanitizeSegment(cut + tail);
 }
 
 function folderFor(layout, row) {
@@ -264,7 +270,7 @@ root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows
         var jobs = {};
 
         function send(type, fields) {
-            var message = { fc: 1, type: type };
+            var message = { fc: 1, nonce: deps.nonce, type: type };
             Object.keys(fields || {}).forEach(function (k) { message[k] = fields[k]; });
             post(message);
         }
@@ -354,7 +360,7 @@ root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows
             var done = 0;
             var bytes = 0;
             var ok = 0;
-            var errors = [];
+            var failed = 0;
 
             for (var p = 0; p < parts.length; p++) {
                 var rows = parts[p];
@@ -375,6 +381,7 @@ root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows
                 });
                 var used = new Set(['manifest.csv', 'errors.csv']);
                 var manifest = [];
+                var errors = [];
                 var next = prefetcher(rows);
 
                 for (var i = 0; i < rows.length; i++) {
@@ -393,6 +400,7 @@ root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows
                     }
                     if (result.error) {
                         errors.push({ row: row, fileName: fileName, reason: String(result.error.message || result.error) });
+                        failed += 1;
                     } else {
                         var folder = core.folderFor(options.layout, row);
                         var zipPath = core.uniquePath(folder ? folder + '/' + fileName : fileName, used);
@@ -410,7 +418,7 @@ root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows
 
                 if (job.cancelled) {
                     zip.terminate();
-                    send('done', { jobId: job.id, ok: ok, failed: errors.length, oversized: plan.oversized.length, cancelled: true });
+                    send('done', { jobId: job.id, ok: ok, failed: failed, oversized: plan.oversized.length, cancelled: true });
                     return;
                 }
 
@@ -423,7 +431,8 @@ root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows
                     });
                 }
                 addText(zip, 'manifest.csv', core.manifestCsv(manifest));
-                if (isLast && errors.length) {
+                // Each part lists its own failures, so an earlier part is complete even if a later one stops.
+                if (errors.length) {
                     addText(zip, 'errors.csv', core.errorsCsv(errors));
                 }
                 zip.end();
@@ -437,7 +446,7 @@ root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows
                     blob: makeBlob(chunks), index: p, count: parts.length
                 });
             }
-            send('done', { jobId: job.id, ok: ok, failed: errors.length, oversized: plan.oversized.length, cancelled: false });
+            send('done', { jobId: job.id, ok: ok, failed: failed, oversized: plan.oversized.length, cancelled: false });
         }
 
         async function listViewIds(message) {
@@ -454,12 +463,12 @@ root.FcCore = { sanitizeSegment, applyPattern, folderFor, uniquePath, filterRows
                     (page.records || []).forEach(function (r) { ids.push(r.Id); });
                     url = page.done ? null : page.nextRecordsUrl;
                 }
-                send('ids', { ids: ids });
+                send('ids', { requestId: message.requestId, ids: ids });
             } catch (e) {
                 if (e instanceof AuthError) {
                     send('fatal', { jobId: null, code: 'AUTH', message: e.message });
                 } else {
-                    send('ids', { ids: [], error: String(e.message || e) });
+                    send('ids', { requestId: message.requestId, ids: [], error: String(e.message || e) });
                 }
             }
         }

@@ -52,6 +52,7 @@ import Fc_Pick_List_View from '@salesforce/label/c.Fc_Pick_List_View';
 import Fc_Tab_Intro from '@salesforce/label/c.Fc_Tab_Intro';
 import Fc_Records_Found from '@salesforce/label/c.Fc_Records_Found';
 import Fc_No_List_Views from '@salesforce/label/c.Fc_No_List_Views';
+import Fc_Engine_Error from '@salesforce/label/c.Fc_Engine_Error';
 
 // Every piece of user-facing text, keyed without the Fc_ prefix.
 export const LABELS = {
@@ -109,6 +110,7 @@ export const LABELS = {
     Tab_Intro: Fc_Tab_Intro,
     Records_Found: Fc_Records_Found,
     No_List_Views: Fc_No_List_Views,
+    Engine_Error: Fc_Engine_Error,
 };
 
 /** Fills {0}, {1}... placeholders in a label. */

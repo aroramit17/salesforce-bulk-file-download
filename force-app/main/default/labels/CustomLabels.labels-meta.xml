@@ -342,7 +342,7 @@
         <language>en_US</language>
         <protected>false</protected>
         <shortDescription>Fc Done Failed</shortDescription>
-        <value>{0} file(s) could not be fetched. See errors.csv in the last zip.</value>
+        <value>{0} file(s) could not be fetched. See errors.csv inside the zip.</value>
     </labels>
     <labels>
         <fullName>Fc_Cancelled</fullName>
@@ -431,5 +431,13 @@
         <protected>false</protected>
         <shortDescription>Fc No List Views</shortDescription>
         <value>This object has no list views you can use. Create one in Salesforce, then come back.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Engine_Error</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Engine Error</shortDescription>
+        <value>The download engine did not start. Refresh the page. If it keeps happening, ask your admin to check that you have a FileCrate permission set.</value>
     </labels>
 </CustomLabels>

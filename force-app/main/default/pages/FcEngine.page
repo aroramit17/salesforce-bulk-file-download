@@ -21,6 +21,9 @@
     if (window.parent === window) {
         return;
     }
+    // The builder that embeds this page passes a nonce; every message echoes it so
+    // several builders on one page never read each other's messages.
+    var nonce = (new URLSearchParams(window.location.search).get('fc') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 64);
     // Parents: this org's Lightning pages, and flow pages on this same Visualforce origin.
     var link = window.FcEngine.createParentLink(
         ['{!JSENCODE(lightningOrigin)}', window.location.origin],
@@ -33,7 +36,8 @@
         post: link.post,
         apiBase: '/services/data/v{!JSENCODE(apiVersion)}/',
         sessionId: '{!JSENCODE($Api.Session_ID)}',
-        baseUrl: '{!JSENCODE(baseUrl)}'
+        baseUrl: '{!JSENCODE(baseUrl)}',
+        nonce: nonce
     });
     window.addEventListener('message', function (event) {
         if (event.source !== window.parent || !link.accept(event.origin)) {
@@ -41,7 +45,7 @@
         }
         engine.handle(event.data);
     });
-    link.announce({ fc: 1, type: 'ready' });
+    link.announce({ fc: 1, nonce: nonce, type: 'ready' });
 })();
 </script>
 </body>

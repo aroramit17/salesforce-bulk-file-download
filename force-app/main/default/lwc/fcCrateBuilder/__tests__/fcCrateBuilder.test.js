@@ -50,10 +50,18 @@ async function mount(props) {
 
 const q = (el, id) => el.shadowRoot.querySelector('[data-id="' + id + '"]');
 
+function nonceOf(el) {
+    return new URL(el.shadowRoot.querySelector('iframe').src, 'https://x.example').searchParams.get('fc');
+}
+
 function fromEngine(el, data) {
     const frame = el.shadowRoot.querySelector('iframe');
     window.dispatchEvent(
-        new MessageEvent('message', { data: { fc: 1, ...data }, origin: 'https://org--c.vf.force.com', source: frame.contentWindow })
+        new MessageEvent('message', {
+            data: { fc: 1, nonce: nonceOf(el), ...data },
+            origin: 'https://org--c.vf.force.com',
+            source: frame.contentWindow
+        })
     );
 }
 
@@ -174,10 +182,82 @@ describe('c-fc-crate-builder', () => {
         const post = jest.spyOn(frame.contentWindow, 'postMessage').mockImplementation(() => {});
         fromEngine(el, { type: 'ready' });
         await flush();
-        expect(post.mock.calls[0][0]).toEqual({ fc: 1, type: 'listview', object: 'Account', listViewId: '00B1' });
-        fromEngine(el, { type: 'ids', ids: ['001A', '001B'] });
+        const request = post.mock.calls[0][0];
+        expect(request).toMatchObject({ fc: 1, type: 'listview', object: 'Account', listViewId: '00B1' });
+        expect(request.requestId).toBeTruthy();
+        fromEngine(el, { type: 'ids', requestId: request.requestId, ids: ['001A', '001B'] });
         await flush();
         expect(getFiles).toHaveBeenCalledWith({ recordIds: ['001A', '001B'], latestOnly: true });
+        expect(q(el, 'count').textContent).toBe('3');
+    });
+
+    it('gives each builder its own nonce in the engine address', async () => {
+        const a = await mount({ recordIds: ['001A'] });
+        const b = await mount({ recordIds: ['001B'] });
+        expect(nonceOf(a)).toMatch(/^[A-Za-z0-9]{16,}$/);
+        expect(nonceOf(a)).not.toBe(nonceOf(b));
+    });
+
+    it('ignores engine messages that carry another builder nonce', async () => {
+        const el = await mount({ recordIds: ['001A'] });
+        fromEngine(el, { type: 'ready', nonce: 'someoneelse' });
+        await flush();
+        expect(q(el, 'download').disabled).toBe(true);
+    });
+
+    it('ignores list view ids that answer an older request', async () => {
+        const el = await mount({ listViewId: '00B1', objectApiName: 'Account' });
+        const frame = el.shadowRoot.querySelector('iframe');
+        const post = jest.spyOn(frame.contentWindow, 'postMessage').mockImplementation(() => {});
+        fromEngine(el, { type: 'ready' });
+        await flush();
+        const first = post.mock.calls[0][0].requestId;
+        el.listViewId = '00B2';
+        await flush();
+        const second = post.mock.calls[1][0].requestId;
+        expect(second).not.toBe(first);
+
+        fromEngine(el, { type: 'ids', requestId: second, ids: ['001NEW'] });
+        await flush();
+        fromEngine(el, { type: 'ids', requestId: first, ids: ['001OLD1', '001OLD2'] });
+        await flush();
+
+        expect(getFiles).toHaveBeenCalledTimes(1);
+        expect(getFiles).toHaveBeenCalledWith({ recordIds: ['001NEW'], latestOnly: true });
+    });
+
+    it('gives up with a message when the engine never starts', async () => {
+        jest.useFakeTimers();
+        try {
+            const el = await mount({ listViewId: '00B1', objectApiName: 'Account' });
+            jest.advanceTimersByTime(20000);
+            await flush();
+            expect(q(el, 'error').textContent).toBe('c.Fc_Engine_Error');
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
+    it('does not give up once the engine has started', async () => {
+        jest.useFakeTimers();
+        try {
+            const el = await mount({ recordIds: ['001A'] });
+            fromEngine(el, { type: 'ready' });
+            jest.advanceTimersByTime(20000);
+            await flush();
+            expect(q(el, 'error')).toBeNull();
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
+    it('can start over after the settings failed to load', async () => {
+        getSettings.mockRejectedValueOnce({ body: { message: 'down' } });
+        const el = await mount({ recordIds: ['001A'] });
+        expect(q(el, 'error').textContent).toContain('down');
+        q(el, 'start-over').click();
+        await flush();
+        expect(getSettings).toHaveBeenCalledTimes(2);
         expect(q(el, 'count').textContent).toBe('3');
     });
 });

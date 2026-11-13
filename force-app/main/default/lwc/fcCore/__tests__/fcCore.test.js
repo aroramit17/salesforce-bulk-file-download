@@ -33,6 +33,15 @@ describe('sanitizeSegment', () => {
     it('cuts names to 150 characters', () => {
         expect(sanitizeSegment('x'.repeat(400))).toHaveLength(150);
     });
+    it('prefixes names that Windows reserves', () => {
+        expect(sanitizeSegment('NUL')).toBe('_NUL');
+        expect(sanitizeSegment('con')).toBe('_con');
+        expect(sanitizeSegment('Aux.txt')).toBe('_Aux.txt');
+        expect(sanitizeSegment('COM1.pdf')).toBe('_COM1.pdf');
+        expect(sanitizeSegment('LPT9')).toBe('_LPT9');
+        expect(sanitizeSegment('Console')).toBe('Console');
+        expect(sanitizeSegment('COM10')).toBe('COM10');
+    });
     it('keeps unicode letters', () => {
         expect(sanitizeSegment('Résumé 日本')).toBe('Résumé 日本');
     });
@@ -70,6 +79,16 @@ describe('applyPattern', () => {
         expect(applyPattern('{RecordName}_{Title}.{ext}', { ...row, parentName: 'A/B', title: 'c:d' })).toBe(
             'A_B_c_d.pdf'
         );
+    });
+    it('keeps the extension when a long name has to be cut', () => {
+        const name = applyPattern('{RecordName}_{Title}.{ext}', { ...row, parentName: 'A'.repeat(40), title: 'T'.repeat(128) });
+        expect(name).toHaveLength(150);
+        expect(name.endsWith('.pdf')).toBe(true);
+    });
+    it('keeps the version suffix and extension when a long name has to be cut', () => {
+        const name = applyPattern('{Title}.{ext}', { title: 'T'.repeat(300), ext: 'pdf', isLatest: false, version: '3' });
+        expect(name).toHaveLength(150);
+        expect(name.endsWith('_v3.pdf')).toBe(true);
     });
     it('falls back to the default pattern when the pattern is blank', () => {
         expect(applyPattern('', row)).toBe('Acme_MSA.pdf');

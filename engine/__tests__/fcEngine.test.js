@@ -86,7 +86,8 @@ function setup(routes, options) {
         baseUrl: 'https://example.my.salesforce.com',
         now: () => new Date(2026, 10, 13),
         makeBlob: concat,
-        retryDelayMs: 0
+        retryDelayMs: 0,
+        nonce: 'n1'
     });
     const run = async (rows) => {
         await engine.handle({ fc: 1, type: 'start', jobId: 'j1', options: { ...OPTIONS, ...options }, objectLabel: 'Account' });
@@ -260,6 +261,36 @@ describe('failures', () => {
     });
 });
 
+describe('message identity', () => {
+    it('stamps every message with the nonce of its builder', async () => {
+        const rows = [fileRow('068A', 'Acme', 'a', 'txt', A)];
+        const t = setup({ [API + rows[0].path]: A });
+        await t.run(rows);
+        expect(t.posts.length).toBeGreaterThan(2);
+        t.posts.forEach((m) => expect(m.nonce).toBe('n1'));
+    });
+});
+
+describe('failures across parts', () => {
+    it('lists each failure in the part where it happened', async () => {
+        const rows = [fileRow('068GONE', 'Acme', 'gone', 'txt', A), fileRow('068B', 'Acme', 'b', 'txt', B)];
+        const t = setup({ [API + rows[1].path]: B }, { maxFilesPerZip: 1 });
+        await t.run(rows);
+        expect(t.parts()).toHaveLength(2);
+        expect(t.unzip(0)['errors.csv']).toContain('068GONE');
+        expect(t.unzip(1)['errors.csv']).toBeUndefined();
+    });
+
+    it('has already recorded earlier failures when a later part hits an auth error', async () => {
+        const rows = [fileRow('068GONE', 'Acme', 'gone', 'txt', A), fileRow('068B', 'Acme', 'b', 'txt', B)];
+        const t = setup({ [API + rows[1].path]: 401 }, { maxFilesPerZip: 1 });
+        await t.run(rows);
+        expect(t.parts()).toHaveLength(1);
+        expect(t.unzip(0)['errors.csv']).toContain('068GONE');
+        expect(t.last('fatal')).toMatchObject({ code: 'AUTH' });
+    });
+});
+
 describe('cancel', () => {
     it('stops after the current file and saves nothing', async () => {
         const rows = [fileRow('068A', 'Acme', 'a', 'txt', A), fileRow('068B', 'Acme', 'b', 'txt', B)];
@@ -288,8 +319,8 @@ describe('list view ids', () => {
             [q1]: { done: false, nextRecordsUrl: '/services/data/v66.0/query/01g-2000', records: [{ Id: '001A' }, { Id: '001B' }] },
             '/services/data/v66.0/query/01g-2000': { done: true, records: [{ Id: '001C' }] }
         });
-        await t.engine.handle({ fc: 1, type: 'listview', object: 'Account', listViewId: '00B1' });
-        expect(t.last('ids')).toEqual({ fc: 1, type: 'ids', ids: ['001A', '001B', '001C'] });
+        await t.engine.handle({ fc: 1, type: 'listview', requestId: 'r7', object: 'Account', listViewId: '00B1' });
+        expect(t.last('ids')).toEqual({ fc: 1, nonce: 'n1', type: 'ids', requestId: 'r7', ids: ['001A', '001B', '001C'] });
     });
 
     it('reports an error when the list view cannot be read', async () => {

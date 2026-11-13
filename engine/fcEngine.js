@@ -34,7 +34,7 @@
         var jobs = {};
 
         function send(type, fields) {
-            var message = { fc: 1, type: type };
+            var message = { fc: 1, nonce: deps.nonce, type: type };
             Object.keys(fields || {}).forEach(function (k) { message[k] = fields[k]; });
             post(message);
         }
@@ -124,7 +124,7 @@
             var done = 0;
             var bytes = 0;
             var ok = 0;
-            var errors = [];
+            var failed = 0;
 
             for (var p = 0; p < parts.length; p++) {
                 var rows = parts[p];
@@ -145,6 +145,7 @@
                 });
                 var used = new Set(['manifest.csv', 'errors.csv']);
                 var manifest = [];
+                var errors = [];
                 var next = prefetcher(rows);
 
                 for (var i = 0; i < rows.length; i++) {
@@ -163,6 +164,7 @@
                     }
                     if (result.error) {
                         errors.push({ row: row, fileName: fileName, reason: String(result.error.message || result.error) });
+                        failed += 1;
                     } else {
                         var folder = core.folderFor(options.layout, row);
                         var zipPath = core.uniquePath(folder ? folder + '/' + fileName : fileName, used);
@@ -180,7 +182,7 @@
 
                 if (job.cancelled) {
                     zip.terminate();
-                    send('done', { jobId: job.id, ok: ok, failed: errors.length, oversized: plan.oversized.length, cancelled: true });
+                    send('done', { jobId: job.id, ok: ok, failed: failed, oversized: plan.oversized.length, cancelled: true });
                     return;
                 }
 
@@ -193,7 +195,8 @@
                     });
                 }
                 addText(zip, 'manifest.csv', core.manifestCsv(manifest));
-                if (isLast && errors.length) {
+                // Each part lists its own failures, so an earlier part is complete even if a later one stops.
+                if (errors.length) {
                     addText(zip, 'errors.csv', core.errorsCsv(errors));
                 }
                 zip.end();
@@ -207,7 +210,7 @@
                     blob: makeBlob(chunks), index: p, count: parts.length
                 });
             }
-            send('done', { jobId: job.id, ok: ok, failed: errors.length, oversized: plan.oversized.length, cancelled: false });
+            send('done', { jobId: job.id, ok: ok, failed: failed, oversized: plan.oversized.length, cancelled: false });
         }
 
         async function listViewIds(message) {
@@ -224,12 +227,12 @@
                     (page.records || []).forEach(function (r) { ids.push(r.Id); });
                     url = page.done ? null : page.nextRecordsUrl;
                 }
-                send('ids', { ids: ids });
+                send('ids', { requestId: message.requestId, ids: ids });
             } catch (e) {
                 if (e instanceof AuthError) {
                     send('fatal', { jobId: null, code: 'AUTH', message: e.message });
                 } else {
-                    send('ids', { ids: [], error: String(e.message || e) });
+                    send('ids', { requestId: message.requestId, ids: [], error: String(e.message || e) });
                 }
             }
         }

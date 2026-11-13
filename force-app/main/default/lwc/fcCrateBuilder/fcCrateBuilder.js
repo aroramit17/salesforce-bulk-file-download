@@ -8,6 +8,19 @@ const RECORDS_PER_CALL = 200;
 const CALLS_IN_FLIGHT = 3;
 const ROWS_PER_MESSAGE = 500;
 const MB = 1024 * 1024;
+const ENGINE_START_TIMEOUT_MS = 15000;
+
+function makeNonce() {
+    const bytes = new Uint8Array(16);
+    if (window.crypto && window.crypto.getRandomValues) {
+        window.crypto.getRandomValues(bytes);
+    } else {
+        for (let i = 0; i < bytes.length; i++) {
+            bytes[i] = Math.floor(Math.random() * 256);
+        }
+    }
+    return Array.from(bytes, (b) => (b < 16 ? '0' : '') + b.toString(16)).join('');
+}
 
 const TYPE_EXTENSIONS = {
     all: [],
@@ -37,7 +50,9 @@ export default class FcCrateBuilder extends LightningElement {
     @api compact = false;
 
     labels = LABELS;
-    engineUrl = '/apex/FcEngine';
+    // Each builder gets its own engine frame; the nonce ties the frame's messages to this builder.
+    _nonce = makeNonce();
+    engineUrl = '/apex/FcEngine?fc=' + this._nonce;
 
     phase = 'loading'; // loading | ready | running | done
     errorMessage = null;
@@ -59,6 +74,8 @@ export default class FcCrateBuilder extends LightningElement {
     _engineOrigin = null;
     _loadToken = 0;
     _jobId = null;
+    _listRequest = 0;
+    _engineTimer = null;
     _onMessage = (event) => this.handleMessage(event);
 
     @api
@@ -86,12 +103,19 @@ export default class FcCrateBuilder extends LightningElement {
     connectedCallback() {
         this._connected = true;
         window.addEventListener('message', this._onMessage);
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        this._engineTimer = setTimeout(() => {
+            if (!this.engineReady) {
+                this.errorMessage = this.labels.Engine_Error;
+            }
+        }, ENGINE_START_TIMEOUT_MS);
         this.init();
     }
 
     disconnectedCallback() {
         this._connected = false;
         window.removeEventListener('message', this._onMessage);
+        clearTimeout(this._engineTimer);
         if (this._jobId) {
             this.postToEngine({ type: 'cancel', jobId: this._jobId });
         }
@@ -136,7 +160,13 @@ export default class FcCrateBuilder extends LightningElement {
 
     requestListView() {
         if (this.engineReady && this._listViewId) {
-            this.postToEngine({ type: 'listview', object: this.objectApiName, listViewId: this._listViewId });
+            this._listRequest += 1;
+            this.postToEngine({
+                type: 'listview',
+                requestId: 'r' + this._listRequest,
+                object: this.objectApiName,
+                listViewId: this._listViewId
+            });
         }
     }
 
@@ -203,16 +233,20 @@ export default class FcCrateBuilder extends LightningElement {
 
     handleMessage(event) {
         const data = event.data;
-        if (!data || data.fc !== 1 || !this.isFromEngine(event)) {
+        if (!data || data.fc !== 1 || data.nonce !== this._nonce || !this.isFromEngine(event)) {
             return;
         }
         if (data.type === 'ready') {
             this._engineOrigin = event.origin;
             this.engineReady = true;
+            clearTimeout(this._engineTimer);
             if (this._listViewId && this.phase === 'loading') {
                 this.requestListView();
             }
         } else if (data.type === 'ids') {
+            if (data.requestId !== 'r' + this._listRequest) {
+                return; // answer to a list view the user has since moved away from
+            }
             if (data.error) {
                 this.fail(data.error);
             } else {
@@ -332,10 +366,13 @@ export default class FcCrateBuilder extends LightningElement {
         this.result = null;
         this.savedParts = [];
         this._jobId = null;
-        this.phase = 'ready';
         if (!this.options) {
+            this.phase = 'loading';
             this.init();
-        } else if (!this.rows.length) {
+            return;
+        }
+        this.phase = 'ready';
+        if (!this.rows.length) {
             this.reload();
         }
     }
