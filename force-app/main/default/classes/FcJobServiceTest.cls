@@ -9,54 +9,62 @@ private class FcJobServiceTest {
 
     @IsTest
     static void savesAJob() {
-        Id jobId = FcJobService.logJob(sample());
-        FcJob__c job = [SELECT Name, Status__c, SourceType__c, ObjectApiName__c, Destination__c, RecordCount__c, FileCount__c, TotalBytes__c, Query__c FROM FcJob__c WHERE Id = :jobId];
-        Assert.isTrue(job.Name.startsWith('FC-'), job.Name);
-        Assert.areEqual('Done', job.Status__c);
-        Assert.areEqual('ListView', job.SourceType__c);
-        Assert.areEqual('Account', job.ObjectApiName__c);
-        Assert.areEqual('Browser', job.Destination__c);
-        Assert.areEqual(3, job.RecordCount__c);
-        Assert.areEqual(29, job.FileCount__c);
-        Assert.areEqual(52468000, job.TotalBytes__c);
-        Assert.areEqual('{"mode":"listviews"}', job.Query__c);
+        System.runAs(FcTestData.runner()) {
+            Id jobId = FcJobService.logJob(sample());
+            FcJob__c job = [SELECT Name, Status__c, SourceType__c, ObjectApiName__c, Destination__c, RecordCount__c, FileCount__c, TotalBytes__c, Query__c FROM FcJob__c WHERE Id = :jobId];
+            Assert.isTrue(job.Name.startsWith('FC-'), job.Name);
+            Assert.areEqual('Done', job.Status__c);
+            Assert.areEqual('ListView', job.SourceType__c);
+            Assert.areEqual('Account', job.ObjectApiName__c);
+            Assert.areEqual('Browser', job.Destination__c);
+            Assert.areEqual(3, job.RecordCount__c);
+            Assert.areEqual(29, job.FileCount__c);
+            Assert.areEqual(52468000, job.TotalBytes__c);
+            Assert.areEqual('{"mode":"listviews"}', job.Query__c);
+        }
     }
 
     @IsTest
     static void cutsTextThatIsTooLong() {
-        Map<String, Object> job = sample();
-        job.put('status', 'x'.repeat(100));
-        job.put('error', 'e'.repeat(40000));
-        Id jobId = FcJobService.logJob(job);
-        FcJob__c saved = [SELECT Status__c, Error__c FROM FcJob__c WHERE Id = :jobId];
-        Assert.areEqual(40, saved.Status__c.length());
-        Assert.areEqual(32768, saved.Error__c.length());
+        System.runAs(FcTestData.runner()) {
+            Map<String, Object> job = sample();
+            job.put('status', 'x'.repeat(100));
+            job.put('error', 'e'.repeat(40000));
+            Id jobId = FcJobService.logJob(job);
+            FcJob__c saved = [SELECT Status__c, Error__c FROM FcJob__c WHERE Id = :jobId];
+            Assert.areEqual(40, saved.Status__c.length());
+            Assert.areEqual(32768, saved.Error__c.length());
+        }
     }
 
     @IsTest
     static void listsJobsNewestFirst() {
-        FcJobService.logJob(sample());
-        Map<String, Object> second = sample();
-        second.put('status', 'Partial');
-        FcJobService.logJob(second);
+        System.runAs(FcTestData.runner()) {
+            FcJobService.logJob(sample());
+            Map<String, Object> second = sample();
+            second.put('status', 'Partial');
+            FcJobService.logJob(second);
 
-        List<Map<String, Object>> jobs = FcJobService.getJobs();
+            List<Map<String, Object>> jobs = FcJobService.getJobs();
 
-        Assert.areEqual(2, jobs.size());
-        Map<String, Object> job = jobs[0];
-        for (String key : new List<String>{ 'id', 'name', 'status', 'sourceType', 'objectApiName', 'destination', 'recordCount', 'fileCount', 'totalBytes', 'request', 'createdDate', 'createdByName' }) {
-            Assert.isTrue(job.containsKey(key), key);
+            Assert.areEqual(2, jobs.size());
+            Map<String, Object> job = jobs[0];
+            for (String key : new List<String>{ 'id', 'name', 'status', 'sourceType', 'objectApiName', 'destination', 'recordCount', 'fileCount', 'totalBytes', 'request', 'createdDate', 'createdByName' }) {
+                Assert.isTrue(job.containsKey(key), key);
+            }
         }
     }
 
     @IsTest
     static void aUserSeesOnlyTheirOwnJobs() {
-        FcJobService.logJob(sample());
-        User u;
+        User other;
         System.runAs(new User(Id = UserInfo.getUserId())) {
-            u = FcTestData.userWithPermissionSet('FileCrate_User');
+            other = FcTestData.userWithPermissionSet('FileCrate_User');
         }
-        System.runAs(u) {
+        System.runAs(FcTestData.runner()) {
+            FcJobService.logJob(sample());
+        }
+        System.runAs(other) {
             Assert.areEqual(0, FcJobService.getJobs().size());
             FcJobService.logJob(sample());
             Assert.areEqual(1, FcJobService.getJobs().size());
@@ -65,13 +73,15 @@ private class FcJobServiceTest {
 
     @IsTest
     static void anAdminSeesEveryJob() {
-        FcJobService.logJob(sample());
-        User admin;
+        User other;
         System.runAs(new User(Id = UserInfo.getUserId())) {
-            admin = FcTestData.userWithPermissionSet('FileCrate_Admin');
+            other = FcTestData.userWithPermissionSet('FileCrate_User');
         }
-        System.runAs(admin) {
-            Assert.areEqual(1, FcJobService.getJobs().size());
+        System.runAs(other) {
+            FcJobService.logJob(sample());
+        }
+        System.runAs(FcTestData.runner()) {
+            Assert.areEqual(1, FcJobService.getJobs().size(), 'FileCrate_Admin grants View All');
         }
     }
 }

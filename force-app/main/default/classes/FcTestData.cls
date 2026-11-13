@@ -1,9 +1,16 @@
 @IsTest
 public class FcTestData {
-    public static Account account(String name) {
-        Account a = new Account(Name = name);
-        insert a;
-        return a;
+    /**
+     * A record to hang files on. Tests use FileCrate's own object, not Account or
+     * Case, so they pass in orgs that have validation rules or required fields on
+     * standard objects. The given name is stored in Status__c and used as the
+     * record's display name for the rest of the test.
+     */
+    public static FcJob__c record(String name) {
+        FcRecordService.nameFieldOverrides = new Map<String, String>{ 'FcJob__c' => 'Status__c' };
+        FcJob__c r = new FcJob__c(Status__c = name);
+        insert r;
+        return r;
     }
 
     public static ContentVersion file(Id parentId, String title, String pathOnClient, String body) {
@@ -43,11 +50,22 @@ public class FcTestData {
         return n;
     }
 
-    public static ContentNote enhancedNote(Id parentId, String title, String html) {
-        ContentNote n = new ContentNote(Title = title, Content = Blob.valueOf(html));
-        insert n;
-        link(n.Id, parentId);
-        return n;
+    /**
+     * Creates an Enhanced Note on the record. The ContentNote type only exists in
+     * orgs where Enhanced Notes are switched on, so it is looked up at run time;
+     * returns false when the org does not have it.
+     */
+    public static Boolean enhancedNote(Id parentId, String title, String html) {
+        Schema.SObjectType noteType = Schema.getGlobalDescribe().get('ContentNote');
+        if (noteType == null || !noteType.getDescribe().isCreateable()) {
+            return false;
+        }
+        SObject note = noteType.newSObject();
+        note.put('Title', title);
+        note.put('Content', Blob.valueOf(html));
+        insert note;
+        link(note.Id, parentId);
+        return true;
     }
 
     /** A user whose profile grants no access to Account. */
@@ -78,6 +96,19 @@ public class FcTestData {
         User u = standardUser();
         PermissionSet ps = [SELECT Id FROM PermissionSet WHERE Name = :permissionSetName LIMIT 1];
         insert new PermissionSetAssignment(AssigneeId = u.Id, PermissionSetId = ps.Id);
+        return u;
+    }
+
+    /**
+     * The user a test acts as: a standard user who holds FileCrate_Admin, like a
+     * real FileCrate user. The person deploying the package may not hold a
+     * FileCrate permission set, and without one the job fields are not visible.
+     */
+    public static User runner() {
+        User u;
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            u = userWithPermissionSet('FileCrate_Admin');
+        }
         return u;
     }
 

@@ -23,7 +23,13 @@ insert new ContentVersion(ContentDocumentId = plan.ContentDocumentId, PathOnClie
 
 insert new Attachment(ParentId = a.Id, Name = 'classic scan.txt', Body = Blob.valueOf('classic attachment body'));
 insert new Note(ParentId = a.Id, Title = 'Call note', Body = 'Spoke to procurement. Renewal looks likely.');
-ContentNote cn = new ContentNote(Title = 'Kickoff notes', Content = Blob.valueOf('<p>Kickoff went well.</p>'));
-insert cn;
-insert new ContentDocumentLink(ContentDocumentId = cn.Id, LinkedEntityId = a.Id, ShareType = 'V');
+// Enhanced Notes only exist in orgs where they are switched on.
+Schema.SObjectType noteType = Schema.getGlobalDescribe().get('ContentNote');
+if (noteType != null) {
+    SObject cn = noteType.newSObject();
+    cn.put('Title', 'Kickoff notes');
+    cn.put('Content', Blob.valueOf('<p>Kickoff went well.</p>'));
+    insert cn;
+    insert new ContentDocumentLink(ContentDocumentId = cn.Id, LinkedEntityId = a.Id, ShareType = 'V');
+}
 System.debug('SEEDED ' + a.Id + ',' + b.Id);

@@ -2,50 +2,52 @@
 private class FcRecordServiceTest {
     @IsTest
     static void usesTheStandardNameField() {
-        Account a = FcTestData.account('Acme');
-        Assert.areEqual('Acme', FcRecordService.getNames(new List<Id>{ a.Id }).get(a.Id));
-    }
-
-    @IsTest
-    static void usesTheAutoNumberNameFieldForCases() {
-        Case c = new Case(Subject = 'Help');
-        insert c;
-        String caseNumber = [SELECT CaseNumber FROM Case WHERE Id = :c.Id].CaseNumber;
-        Assert.areEqual(caseNumber, FcRecordService.getNames(new List<Id>{ c.Id }).get(c.Id));
+        FcJob__c job = new FcJob__c();
+        insert job;
+        String autoNumber = [SELECT Name FROM FcJob__c WHERE Id = :job.Id].Name;
+        Assert.areEqual(autoNumber, FcRecordService.getNames(new List<Id>{ job.Id }).get(job.Id));
     }
 
     @IsTest
     static void honoursAConfiguredNameField() {
-        Account a = new Account(Name = 'Acme', Site = 'West Campus');
-        insert a;
-        FcRecordService.nameFieldOverrides = new Map<String, String>{ 'Account' => 'Site' };
-        Assert.areEqual('West Campus', FcRecordService.getNames(new List<Id>{ a.Id }).get(a.Id));
+        System.runAs(FcTestData.runner()) {
+            FcJob__c job = FcTestData.record('West Campus');
+            Assert.areEqual('West Campus', FcRecordService.getNames(new List<Id>{ job.Id }).get(job.Id));
+        }
+    }
+
+    @IsTest
+    static void ignoresAConfiguredFieldThatDoesNotExist() {
+        FcJob__c job = new FcJob__c();
+        insert job;
+        FcRecordService.nameFieldOverrides = new Map<String, String>{ 'FcJob__c' => 'No_Such_Field__c' };
+        String autoNumber = [SELECT Name FROM FcJob__c WHERE Id = :job.Id].Name;
+        Assert.areEqual(autoNumber, FcRecordService.getNames(new List<Id>{ job.Id }).get(job.Id));
     }
 
     @IsTest
     static void fallsBackToTheIdWhenTheNameIsBlank() {
-        Account a = new Account(Name = 'Acme');
-        insert a;
-        FcRecordService.nameFieldOverrides = new Map<String, String>{ 'Account' => 'Site' };
-        Assert.areEqual(String.valueOf(a.Id), FcRecordService.getNames(new List<Id>{ a.Id }).get(a.Id));
+        FcJob__c job = FcTestData.record(null);
+        Assert.areEqual(String.valueOf(job.Id), FcRecordService.getNames(new List<Id>{ job.Id }).get(job.Id));
     }
 
     @IsTest
     static void namesRecordsOfSeveralObjectsAtOnce() {
-        Account a = FcTestData.account('Acme');
-        Contact c = new Contact(LastName = 'Rao', AccountId = a.Id);
-        insert c;
-        Map<Id, String> names = FcRecordService.getNames(new List<Id>{ a.Id, c.Id });
-        Assert.areEqual('Acme', names.get(a.Id));
-        Assert.areEqual('Rao', names.get(c.Id));
+        System.runAs(FcTestData.runner()) {
+            FcJob__c job = FcTestData.record('Acme');
+            Id me = UserInfo.getUserId();
+            Map<Id, String> names = FcRecordService.getNames(new List<Id>{ job.Id, me });
+            Assert.areEqual('Acme', names.get(job.Id));
+            Assert.areEqual(UserInfo.getName(), names.get(me));
+        }
     }
 
     @IsTest
     static void leavesOutRecordsTheUserCannotSee() {
-        Account a = FcTestData.account('Acme');
+        FcJob__c job = FcTestData.record('Acme');
         Map<Id, String> names;
         System.runAs(FcTestData.userWithoutRecordAccess()) {
-            names = FcRecordService.getNames(new List<Id>{ a.Id });
+            names = FcRecordService.getNames(new List<Id>{ job.Id });
         }
         Assert.areEqual(0, names.size());
     }

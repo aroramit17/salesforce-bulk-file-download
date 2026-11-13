@@ -6,49 +6,55 @@ private class FcSelectionServiceTest {
 
     @IsTest
     static void returnsChildRecordIds() {
-        Account a = FcTestData.account('Acme');
-        Contact c1 = new Contact(LastName = 'One', AccountId = a.Id);
-        Contact c2 = new Contact(LastName = 'Two', AccountId = a.Id);
-        insert new List<Contact>{ c1, c2 };
-        insert new Contact(LastName = 'Elsewhere');
+        FcJob__c job = FcTestData.record('Acme');
+        Attachment one = FcTestData.attachment(job.Id, 'one.txt', 'a');
+        Attachment two = FcTestData.attachment(job.Id, 'two.txt', 'b');
+        FcTestData.attachment(FcTestData.record('Elsewhere').Id, 'other.txt', 'c');
 
-        Map<String, Object> result = FcSelectionService.getRelatedIds(a.Id, new List<String>{ 'Contacts' });
+        Map<String, Object> result = FcSelectionService.getRelatedIds(job.Id, new List<String>{ 'Attachments' });
 
-        Assert.areEqual(new Set<Id>{ c1.Id, c2.Id }, new Set<Id>(byPath(result).get('Contacts')));
+        Assert.areEqual(new Set<Id>{ one.Id, two.Id }, new Set<Id>(byPath(result).get('Attachments')));
         Assert.areEqual(0, ((List<String>) result.get('errors')).size());
     }
 
     @IsTest
     static void matchesRelationshipNamesWithoutRegardToCase() {
-        Account a = FcTestData.account('Acme');
-        Contact c = new Contact(LastName = 'One', AccountId = a.Id);
-        insert c;
-        Map<String, Object> result = FcSelectionService.getRelatedIds(a.Id, new List<String>{ ' contacts ' });
-        Assert.areEqual(1, byPath(result).get('contacts').size());
+        FcJob__c job = FcTestData.record('Acme');
+        FcTestData.attachment(job.Id, 'one.txt', 'a');
+        Map<String, Object> result = FcSelectionService.getRelatedIds(job.Id, new List<String>{ ' attachments ' });
+        Assert.areEqual(1, byPath(result).get('attachments').size());
     }
 
     @IsTest
     static void returnsGrandchildRecordIds() {
-        Account a = FcTestData.account('Acme');
-        Contact c = new Contact(LastName = 'One', AccountId = a.Id);
-        insert c;
-        Case k = new Case(Subject = 'Help', ContactId = c.Id);
-        insert k;
+        // Root: the running user. Child: a user they manage. Grandchild: that user's permission set assignments.
+        User managed;
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            managed = FcTestData.userWithPermissionSet('FileCrate_User');
+            managed.ManagerId = UserInfo.getUserId();
+            update managed;
+        }
 
-        Map<String, Object> result = FcSelectionService.getRelatedIds(a.Id, new List<String>{ 'Contacts.Cases' });
+        Map<String, Object> result = FcSelectionService.getRelatedIds(
+            UserInfo.getUserId(),
+            new List<String>{ 'ManagedUsers', 'ManagedUsers.PermissionSetAssignments' }
+        );
 
-        Assert.areEqual(new List<Id>{ k.Id }, byPath(result).get('Contacts.Cases'));
+        Assert.isTrue(byPath(result).get('ManagedUsers').contains(managed.Id), 'The managed user is a child');
+        Set<Id> grandchildren = new Set<Id>(byPath(result).get('ManagedUsers.PermissionSetAssignments'));
+        Id assignment = [SELECT Id FROM PermissionSetAssignment WHERE AssigneeId = :managed.Id AND PermissionSet.Name = 'FileCrate_User'].Id;
+        Assert.isTrue(grandchildren.contains(assignment), 'The managed user\'s assignment is a grandchild');
+        Assert.areEqual(0, ((List<String>) result.get('errors')).size());
     }
 
     @IsTest
     static void reportsAnUnknownRelationshipAndStillLoadsTheRest() {
-        Account a = FcTestData.account('Acme');
-        Contact c = new Contact(LastName = 'One', AccountId = a.Id);
-        insert c;
+        FcJob__c job = FcTestData.record('Acme');
+        FcTestData.attachment(job.Id, 'one.txt', 'a');
 
-        Map<String, Object> result = FcSelectionService.getRelatedIds(a.Id, new List<String>{ 'Nonsense', 'Contacts', 'Contacts.Nope' });
+        Map<String, Object> result = FcSelectionService.getRelatedIds(job.Id, new List<String>{ 'Nonsense', 'Attachments', 'Attachments.Nope' });
 
-        Assert.areEqual(1, byPath(result).get('Contacts').size());
+        Assert.areEqual(1, byPath(result).get('Attachments').size());
         Assert.isFalse(byPath(result).containsKey('Nonsense'));
         List<String> errors = (List<String>) result.get('errors');
         Assert.areEqual(2, errors.size());
@@ -58,36 +64,36 @@ private class FcSelectionServiceTest {
 
     @IsTest
     static void rejectsPathsDeeperThanTwoLevels() {
-        Account a = FcTestData.account('Acme');
-        Map<String, Object> result = FcSelectionService.getRelatedIds(a.Id, new List<String>{ 'Contacts.Cases.Attachments' });
+        FcJob__c job = FcTestData.record('Acme');
+        Map<String, Object> result = FcSelectionService.getRelatedIds(job.Id, new List<String>{ 'Attachments.Notes.More' });
         Assert.areEqual(1, ((List<String>) result.get('errors')).size());
     }
 
     @IsTest
     static void findsRecordsByName() {
-        Account a = FcTestData.account('Harbor Freight');
-        Test.setFixedSearchResults(new List<Id>{ a.Id });
+        Id me = UserInfo.getUserId();
+        Test.setFixedSearchResults(new List<Id>{ me });
 
-        List<Map<String, String>> found = FcSelectionService.searchRecords('Account', 'Harb');
+        List<Map<String, String>> found = FcSelectionService.searchRecords('User', 'Someone');
 
         Assert.areEqual(1, found.size());
-        Assert.areEqual(String.valueOf(a.Id), found[0].get('id'));
-        Assert.areEqual('Harbor Freight', found[0].get('name'));
+        Assert.areEqual(String.valueOf(me), found[0].get('id'));
+        Assert.areEqual(UserInfo.getName(), found[0].get('name'));
     }
 
     @IsTest
     static void treatsSearchPunctuationAndOperatorsAsText() {
-        Account a = FcTestData.account('O\'Brien "x"');
-        Test.setFixedSearchResults(new List<Id>{ a.Id });
-        List<Map<String, String>> found = FcSelectionService.searchRecords('Account', 'O\'Brien "x" AND -y \\ (z) OR');
+        Test.setFixedSearchResults(new List<Id>{ UserInfo.getUserId() });
+        List<Map<String, String>> found = FcSelectionService.searchRecords('User', 'O\'Brien "x" AND -y \\ (z) OR');
         Assert.areEqual(1, found.size());
+        Assert.areEqual('Brien* AND xx*', FcSelectionService.searchTextFor('O\'Brien "xx" AND -y \\ (z) OR'));
     }
 
     @IsTest
     static void returnsNothingForAShortOrEmptySearch() {
-        Assert.areEqual(0, FcSelectionService.searchRecords('Account', ' a ').size());
-        Assert.areEqual(0, FcSelectionService.searchRecords('Account', null).size());
-        Assert.areEqual(0, FcSelectionService.searchRecords('Account', '* ?').size());
+        Assert.areEqual(0, FcSelectionService.searchRecords('User', ' a ').size());
+        Assert.areEqual(0, FcSelectionService.searchRecords('User', null).size());
+        Assert.areEqual(0, FcSelectionService.searchRecords('User', '* ?').size());
     }
 
     @IsTest
@@ -111,8 +117,8 @@ private class FcSelectionServiceTest {
 
     @IsTest
     static void runsASelectIdQueryForAUserWithThePermission() {
-        Account a = FcTestData.account('Acme');
-        Account b = FcTestData.account('Globex');
+        FcJob__c a = FcTestData.record('Acme');
+        FcTestData.record('Globex');
         User admin;
         System.runAs(new User(Id = UserInfo.getUserId())) {
             admin = FcTestData.userWithPermissionSet('FileCrate_Admin');
@@ -121,7 +127,7 @@ private class FcSelectionServiceTest {
         Boolean allowed;
         System.runAs(admin) {
             allowed = FcSelectionService.canRunSoql();
-            ids = FcSelectionService.runQuery('select id from Account where Name = \'Acme\'');
+            ids = FcSelectionService.runQuery('select id from FcJob__c where Status__c = \'Acme\'');
         }
         Assert.areEqual(true, allowed);
         Assert.areEqual(new List<Id>{ a.Id }, ids);
@@ -129,14 +135,13 @@ private class FcSelectionServiceTest {
 
     @IsTest
     static void refusesToRunForAUserWithoutThePermission() {
-        FcTestData.account('Acme');
         User plain;
         System.runAs(new User(Id = UserInfo.getUserId())) {
             plain = FcTestData.userWithPermissionSet('FileCrate_User');
         }
         System.runAs(plain) {
             Assert.areEqual(false, FcSelectionService.canRunSoql());
-            assertRejected('SELECT Id FROM Account');
+            assertRejected('SELECT Id FROM FcJob__c');
         }
     }
 
