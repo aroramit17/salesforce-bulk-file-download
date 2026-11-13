@@ -1,0 +1,8 @@
+{
+  "orgName": "FileCrate Dev",
+  "edition": "Developer",
+  "settings": {
+    "lightningExperienceSettings": { "enableS1DesktopEnabled": true },
+    "enhancedNotesSettings": { "enableEnhancedNotes": true }
+  }
+}

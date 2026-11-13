@@ -1,0 +1,15 @@
+{
+  "name": "filecrate",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Open source bulk file download for Salesforce",
+  "license": "MIT",
+  "scripts": {
+    "build": "node scripts/build-bundle.js",
+    "test": "sfdx-lwc-jest"
+  },
+  "devDependencies": {
+    "@salesforce/sfdx-lwc-jest": "^7.0.1",
+    "fflate": "0.8.2"
+  }
+}
