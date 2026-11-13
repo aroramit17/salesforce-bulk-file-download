@@ -480,4 +480,84 @@
         <shortDescription>Fc Related Count</shortDescription>
         <value>{0} ({1} records)</value>
     </labels>
+    <labels>
+        <fullName>Fc_Save_Folder</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Save Folder</shortDescription>
+        <value>Save to a folder</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Popup_Blocked</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Popup Blocked</shortDescription>
+        <value>Your browser blocked the FileCrate window. Allow pop-ups for this site and try again.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Folder_Window</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Folder Window</shortDescription>
+        <value>Follow the steps in the FileCrate window that just opened.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Done_Folder</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Done Folder</shortDescription>
+        <value>Done. {0} files saved to your folder.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Folder_Title</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Folder Title</shortDescription>
+        <value>FileCrate: save to a folder</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Folder_Intro</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Folder Intro</shortDescription>
+        <value>Choose the folder where the files should go. Keep this window open until it finishes.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Choose_Folder</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Choose Folder</shortDescription>
+        <value>Choose folder</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Folder_Working</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Folder Working</shortDescription>
+        <value>Saving files...</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Folder_Done</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Folder Done</shortDescription>
+        <value>Done. You can close this window.</value>
+    </labels>
+    <labels>
+        <fullName>Fc_Folder_No_Opener</fullName>
+        <categories>FileCrate</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Fc Folder No Opener</shortDescription>
+        <value>Open this window from the Save to a folder button in FileCrate.</value>
+    </labels>
 </CustomLabels>

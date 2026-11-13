@@ -2,7 +2,7 @@
     <lightning-card title="FileCrate" icon-name="utility:package">
         <div class="slds-p-horizontal_medium">
             <template lwc:if={recordId}>
-                <c-fc-crate-builder record-ids={ids} object-api-name={objectApiName} compact></c-fc-crate-builder>
+                <c-fc-crate-builder record-ids={ids} object-api-name={objectApiName} related-paths={relatedPaths} compact></c-fc-crate-builder>
             </template>
         </div>
     </lightning-card>

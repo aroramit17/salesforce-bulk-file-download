@@ -90,6 +90,11 @@ export default class FcCrateBuilder extends LightningElement {
     _loadToken = 0;
     _jobId = null;
     _runBytes = 0;
+    _folderNonce = null;
+    _folderWindow = null;
+    _folderOrigin = null;
+    _folderRows = null;
+    folderMode = false;
     _listRequest = 0;
     _engineTimer = null;
     _onMessage = (event) => this.handleMessage(event);
@@ -329,7 +334,14 @@ export default class FcCrateBuilder extends LightningElement {
 
     handleMessage(event) {
         const data = event.data;
-        if (!data || data.fc !== 1 || data.nonce !== this._nonce || !this.isFromEngine(event)) {
+        if (!data || data.fc !== 1) {
+            return;
+        }
+        if (this._folderNonce && data.nonce === this._folderNonce) {
+            this.handleFolderMessage(event, data);
+            return;
+        }
+        if (data.nonce !== this._nonce || !this.isFromEngine(event)) {
             return;
         }
         if (data.type === 'ready') {
@@ -462,17 +474,69 @@ export default class FcCrateBuilder extends LightningElement {
         if (!rows.length || !this.engineReady) {
             return;
         }
+        this.folderMode = false;
+        this.beginRun(rows);
+        this.sendJob((message) => this.postToEngine(message), rows, 'zip');
+    }
+
+    /** Folder output runs in its own window, because browsers block the folder picker inside an embedded frame. */
+    handleFolder() {
+        const rows = this.filteredRows;
+        if (!rows.length) {
+            return;
+        }
+        this._folderNonce = makeNonce();
+        const opened = window.open('/apex/FcEngine?fc=' + this._folderNonce + '&mode=folder', '_blank');
+        if (!opened) {
+            this._folderNonce = null;
+            this.errorMessage = this.labels.Popup_Blocked;
+            return;
+        }
+        this._folderWindow = opened;
+        this._folderOrigin = null;
+        this._folderRows = rows;
+        this.folderMode = true;
+        this.beginRun(rows);
+    }
+
+    handleFolderMessage(event, data) {
+        const expected = engineOriginFor(window.location.host);
+        if (event.source !== this._folderWindow && !(expected !== null && event.origin === expected)) {
+            return;
+        }
+        if (data.type === 'ready') {
+            this._folderOrigin = event.origin;
+            this.sendJob((message) => this.postToFolder(message), this._folderRows, 'folder');
+        } else if (data.type === 'fatal') {
+            this._jobId = null;
+            this.errorMessage = data.code === 'AUTH' ? this.labels.Auth_Error : this.labels.Error + ' ' + data.message;
+        } else if (data.jobId && data.jobId === this._jobId) {
+            this.handleJobMessage(data);
+        }
+    }
+
+    postToFolder(message) {
+        if (this._folderWindow && this._folderOrigin) {
+            this._folderWindow.postMessage({ fc: 1, ...message }, this._folderOrigin);
+        }
+    }
+
+    beginRun(rows) {
         this._jobId = 'job' + Date.now();
         this.savedParts = [];
         this.result = null;
         this.progress = { done: 0, total: rows.length, bytes: 0, totalBytes: this.totalBytes, current: '' };
         this._runBytes = this.totalBytes;
         this.phase = 'running';
-        this.postToEngine({
+    }
+
+    sendJob(post, rows, output) {
+        post({
             type: 'start',
             jobId: this._jobId,
             objectLabel: this.presetLabel || this.objectApiName || (this._listViews ? 'Files' : rows[0].parentObject),
             options: {
+                output,
                 layout: this.options.layout,
                 pattern: this.options.pattern || '',
                 maxZipBytes: this.options.maxZipBytes,
@@ -482,18 +546,18 @@ export default class FcCrateBuilder extends LightningElement {
         const pages = chunk(rows, ROWS_PER_MESSAGE);
         pages.forEach((page, i) => {
             // Plain copies, so the message never carries framework proxies.
-            this.postToEngine({
-                type: 'rows',
-                jobId: this._jobId,
-                rows: JSON.parse(JSON.stringify(page)),
-                last: i === pages.length - 1
-            });
+            post({ type: 'rows', jobId: this._jobId, rows: JSON.parse(JSON.stringify(page)), last: i === pages.length - 1 });
         });
     }
 
     handleCancel() {
         if (this._jobId) {
-            this.postToEngine({ type: 'cancel', jobId: this._jobId });
+            const message = { type: 'cancel', jobId: this._jobId };
+            if (this.folderMode) {
+                this.postToFolder(message);
+            } else {
+                this.postToEngine(message);
+            }
         }
     }
 
@@ -526,6 +590,12 @@ export default class FcCrateBuilder extends LightningElement {
     }
     get noRecords() {
         return this.phase === 'ready' && !this._presetRows && !this.sources.length && !this._currentIds.length;
+    }
+    get canSaveToFolder() {
+        return typeof window.showDirectoryPicker === 'function';
+    }
+    get runNote() {
+        return this.folderMode ? this.labels.Folder_Window : this.labels.Keep_Open;
     }
     get showLatest() {
         return !this._presetRows;
@@ -636,7 +706,10 @@ export default class FcCrateBuilder extends LightningElement {
         if (!this.result) {
             return '';
         }
-        return this.result.cancelled ? this.labels.Cancelled : fmt(this.labels.Done, this.result.ok);
+        if (this.result.cancelled) {
+            return this.labels.Cancelled;
+        }
+        return fmt(this.result.folder ? this.labels.Done_Folder : this.labels.Done, this.result.ok);
     }
     get doneWarning() {
         const notes = [];

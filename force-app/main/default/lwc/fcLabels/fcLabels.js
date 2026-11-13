@@ -55,6 +55,16 @@ import Fc_No_List_Views from '@salesforce/label/c.Fc_No_List_Views';
 import Fc_Engine_Error from '@salesforce/label/c.Fc_Engine_Error';
 import Fc_Related from '@salesforce/label/c.Fc_Related';
 import Fc_Related_Count from '@salesforce/label/c.Fc_Related_Count';
+import Fc_Save_Folder from '@salesforce/label/c.Fc_Save_Folder';
+import Fc_Popup_Blocked from '@salesforce/label/c.Fc_Popup_Blocked';
+import Fc_Folder_Window from '@salesforce/label/c.Fc_Folder_Window';
+import Fc_Done_Folder from '@salesforce/label/c.Fc_Done_Folder';
+import Fc_Folder_Title from '@salesforce/label/c.Fc_Folder_Title';
+import Fc_Folder_Intro from '@salesforce/label/c.Fc_Folder_Intro';
+import Fc_Choose_Folder from '@salesforce/label/c.Fc_Choose_Folder';
+import Fc_Folder_Working from '@salesforce/label/c.Fc_Folder_Working';
+import Fc_Folder_Done from '@salesforce/label/c.Fc_Folder_Done';
+import Fc_Folder_No_Opener from '@salesforce/label/c.Fc_Folder_No_Opener';
 
 // Every piece of user-facing text, keyed without the Fc_ prefix.
 export const LABELS = {
@@ -115,6 +125,16 @@ export const LABELS = {
     Engine_Error: Fc_Engine_Error,
     Related: Fc_Related,
     Related_Count: Fc_Related_Count,
+    Save_Folder: Fc_Save_Folder,
+    Popup_Blocked: Fc_Popup_Blocked,
+    Folder_Window: Fc_Folder_Window,
+    Done_Folder: Fc_Done_Folder,
+    Folder_Title: Fc_Folder_Title,
+    Folder_Intro: Fc_Folder_Intro,
+    Choose_Folder: Fc_Choose_Folder,
+    Folder_Working: Fc_Folder_Working,
+    Folder_Done: Fc_Folder_Done,
+    Folder_No_Opener: Fc_Folder_No_Opener,
 };
 
 /** Fills {0}, {1}... placeholders in a label. */

@@ -5,4 +5,9 @@ export default class FcCrateBuilder extends LightningElement {
     @api listViewId;
     @api objectApiName;
     @api compact;
+    @api relatedPaths;
+    @api listViews;
+    @api presetRows;
+    @api presetLabel;
+    @api request;
 }

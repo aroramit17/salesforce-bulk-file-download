@@ -4,43 +4,98 @@
 <head>
     <meta charset="utf-8"/>
     <title>FileCrate engine</title>
+    <style>
+        body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; color: #181818; }
+        #fc-folder { display: none; max-width: 36rem; margin: 3rem auto; padding: 0 1rem; }
+        #fc-folder h1 { font-size: 1.5rem; }
+        #fc-choose { min-height: 44px; padding: 0 1.25rem; font-size: 1rem; border: 0; border-radius: 6px; background: #0b5cab; color: #fff; cursor: pointer; }
+        #fc-choose[disabled] { background: #747474; cursor: default; }
+        #fc-status { margin-top: 1rem; overflow-wrap: anywhere; }
+    </style>
 </head>
 <body>
 <!--
-  FileCrate engine. Runs inside an iframe owned by the fcCrateBuilder LWC.
-  It fetches file bytes from the REST API with this page's session, zips them
-  in the browser and hands each finished zip to the parent as a Blob.
+  FileCrate engine. Fetches file bytes from the REST API with this page's
+  session and either zips them (embedded in an iframe by the fcCrateBuilder
+  LWC) or writes them into a folder the user picks (opened as its own window,
+  because browsers block the folder picker inside an embedded frame).
   It only accepts messages from, and only replies to, this org's Lightning origin
   or this same Visualforce origin (where Salesforce serves flow pages).
 -->
+<div id="fc-folder">
+    <h1>{!HTMLENCODE($Label.Fc_Folder_Title)}</h1>
+    <p id="fc-intro">{!HTMLENCODE($Label.Fc_Folder_Intro)}</p>
+    <button type="button" id="fc-choose">{!HTMLENCODE($Label.Fc_Choose_Folder)}</button>
+    <p id="fc-status" role="status"></p>
+</div>
 <script src="{!URLFOR($Resource.fflate, 'index.js')}"></script>
 <script src="{!$Resource.fcEngineBundle}"></script>
 <script>
 (function () {
     'use strict';
-    if (window.parent === window) {
+    var params = new URLSearchParams(window.location.search);
+    // The builder passes a nonce; every message echoes it so several builders
+    // on one page never read each other's messages.
+    var nonce = (params.get('fc') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 64);
+    var folderMode = params.get('mode') === 'folder' && window.parent === window;
+    var host = folderMode ? window.opener : (window.parent === window ? null : window.parent);
+    var status = document.getElementById('fc-status');
+
+    if (folderMode) {
+        document.getElementById('fc-folder').style.display = 'block';
+    }
+    if (!host) {
+        if (folderMode) {
+            document.getElementById('fc-choose').disabled = true;
+            status.textContent = '{!JSENCODE($Label.Fc_Folder_No_Opener)}';
+        }
         return;
     }
-    // The builder that embeds this page passes a nonce; every message echoes it so
-    // several builders on one page never read each other's messages.
-    var nonce = (new URLSearchParams(window.location.search).get('fc') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 64);
-    // Parents: this org's Lightning pages, and flow pages on this same Visualforce origin.
+
+    // Hosts: this org's Lightning pages, and flow pages on this same Visualforce origin.
     var link = window.FcEngine.createParentLink(
         ['{!JSENCODE(lightningOrigin)}', window.location.origin],
-        function (message, origin) { window.parent.postMessage(message, origin); }
+        function (message, origin) { host.postMessage(message, origin); }
     );
+
+    // Folder mode: the job waits until the user has picked a folder.
+    var resolveSink;
+    var sinkPromise = new Promise(function (resolve) { resolveSink = resolve; });
+    if (folderMode) {
+        document.getElementById('fc-choose').addEventListener('click', function () {
+            window.showDirectoryPicker({ mode: 'readwrite' }).then(function (handle) {
+                document.getElementById('fc-choose').disabled = true;
+                status.textContent = '{!JSENCODE($Label.Fc_Folder_Working)}';
+                resolveSink(window.FcEngine.createFolderSink(handle));
+            }, function () { /* picker dismissed; the user can try again */ });
+        });
+    }
+
+    function post(message) {
+        if (folderMode && message.type === 'progress') {
+            status.textContent = '{!JSENCODE($Label.Fc_Folder_Working)} ' + message.done + ' / ' + message.total +
+                (message.current ? ' — ' + message.current : '');
+        } else if (folderMode && message.type === 'done') {
+            status.textContent = '{!JSENCODE($Label.Fc_Folder_Done)}';
+        } else if (folderMode && message.type === 'fatal') {
+            status.textContent = message.message;
+        }
+        link.post(message);
+    }
+
     var engine = window.FcEngine.createEngine({
         fflate: window.fflate,
         core: window.FcCore,
         fetchFn: function (url, init) { return window.fetch(url, init); },
-        post: link.post,
+        post: post,
         apiBase: '/services/data/v{!JSENCODE(apiVersion)}/',
         sessionId: '{!JSENCODE($Api.Session_ID)}',
         baseUrl: '{!JSENCODE(baseUrl)}',
-        nonce: nonce
+        nonce: nonce,
+        getFolderSink: function () { return sinkPromise; }
     });
     window.addEventListener('message', function (event) {
-        if (event.source !== window.parent || !link.accept(event.origin)) {
+        if (event.source !== host || !link.accept(event.origin)) {
             return;
         }
         engine.handle(event.data);

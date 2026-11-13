@@ -7,4 +7,10 @@
     <targets>
         <target>lightning__RecordPage</target>
     </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__RecordPage">
+            <property name="relatedPaths" type="String" label="Related records to offer"
+                      description="Comma separated child relationship names, one or two levels deep. Example: Contacts, Opportunities, Opportunities.OpportunityLineItems"/>
+        </targetConfig>
+    </targetConfigs>
 </LightningComponentBundle>

@@ -22,7 +22,7 @@
         <template lwc:elseif={isRunning}>
             <div class="slds-p-around_small" data-id="progress">
                 <h2 class="slds-text-heading_small slds-m-bottom_xx-small">{labels.Building}</h2>
-                <p class="slds-text-color_weak slds-m-bottom_small">{labels.Keep_Open}</p>
+                <p class="slds-text-color_weak slds-m-bottom_small" data-id="run-note">{runNote}</p>
                 <div class="slds-grid slds-grid_align-spread slds-wrap slds-m-bottom_xx-small">
                     <strong data-id="progress-files">{progressFilesText}</strong>
                     <span>{progressBytesText}</span>
@@ -146,6 +146,10 @@
                         <div class="slds-grid slds-wrap slds-grid_vertical-align-center">
                             <lightning-button variant="brand" label={downloadLabel} disabled={downloadDisabled} onclick={handleDownload}
                                 class="slds-m-right_small slds-m-bottom_xx-small" data-id="download"></lightning-button>
+                            <template lwc:if={canSaveToFolder}>
+                                <lightning-button label={labels.Save_Folder} disabled={noFiles} onclick={handleFolder}
+                                    class="slds-m-right_small slds-m-bottom_xx-small" data-id="folder"></lightning-button>
+                            </template>
                             <template lwc:if={compact}>
                                 <lightning-button variant="base" label={optionsToggleLabel} onclick={handleToggleOptions}
                                     class="slds-m-bottom_xx-small" data-id="toggle-options"></lightning-button>

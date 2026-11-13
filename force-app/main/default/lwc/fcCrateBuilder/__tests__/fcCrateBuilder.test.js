@@ -383,4 +383,75 @@ describe('c-fc-crate-builder', () => {
             expect(q(el, 'error')).toBeNull();
         });
     });
+
+    describe('save to a folder', () => {
+        let opened;
+        let openSpy;
+
+        beforeEach(() => {
+            window.showDirectoryPicker = () => {};
+            // A real window object stands in for the engine window the builder opens.
+            const frame = document.createElement('iframe');
+            document.body.appendChild(frame);
+            opened = frame.contentWindow;
+            openSpy = jest.spyOn(window, 'open').mockReturnValue(opened);
+        });
+
+        afterEach(() => {
+            delete window.showDirectoryPicker;
+            openSpy.mockRestore();
+        });
+
+        function fromFolderWindow(data) {
+            const nonce = new URL(openSpy.mock.calls[0][0], 'https://x.example').searchParams.get('fc');
+            window.dispatchEvent(
+                new MessageEvent('message', { data: { fc: 1, nonce, ...data }, origin: 'https://org--c.vf.force.com', source: opened })
+            );
+        }
+
+        it('is not offered when the browser has no folder picker', async () => {
+            delete window.showDirectoryPicker;
+            const el = await mount({ recordIds: ['001A'] });
+            expect(q(el, 'folder')).toBeNull();
+        });
+
+        it('is offered when the browser has a folder picker', async () => {
+            const el = await mount({ recordIds: ['001A'] });
+            expect(q(el, 'folder')).not.toBeNull();
+        });
+
+        it('opens the engine in its own window and sends it the job once it is ready', async () => {
+            const el = await mount({ recordIds: ['001A'], objectApiName: 'Account' });
+            const post = jest.spyOn(opened, 'postMessage').mockImplementation(() => {});
+            q(el, 'folder').click();
+            await flush();
+            const url = openSpy.mock.calls[0][0];
+            expect(url).toContain('/apex/FcEngine?fc=');
+            expect(url).toContain('mode=folder');
+            expect(url).not.toContain(nonceOf(el));
+            expect(post).not.toHaveBeenCalled();
+            expect(q(el, 'progress')).not.toBeNull();
+
+            fromFolderWindow({ type: 'ready' });
+            await flush();
+            const sent = post.mock.calls.map((c) => c[0]);
+            expect(post.mock.calls[0][1]).toBe('https://org--c.vf.force.com');
+            expect(sent[0]).toMatchObject({ type: 'start', options: { output: 'folder', layout: 'PerRecord' } });
+            expect(sent[1]).toMatchObject({ type: 'rows', last: true });
+            expect(sent[1].rows).toHaveLength(3);
+
+            fromFolderWindow({ type: 'done', jobId: sent[0].jobId, ok: 3, failed: 0, oversized: 0, cancelled: false, folder: true });
+            await flush();
+            expect(q(el, 'done-text').textContent).toBe('c.Fc_Done_Folder');
+            expect(logJob.mock.calls[0][0].job.destination).toBe('Folder');
+        });
+
+        it('explains when the browser blocks the window', async () => {
+            openSpy.mockReturnValue(null);
+            const el = await mount({ recordIds: ['001A'] });
+            q(el, 'folder').click();
+            await flush();
+            expect(q(el, 'error').textContent).toBe('c.Fc_Popup_Blocked');
+        });
+    });
 });
